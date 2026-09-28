@@ -1,0 +1,67 @@
+diff --git a/bench/codecs.h b/bench/codecs.h
+index 8861db7..d2bc9b1 100644
+--- a/bench/codecs.h
++++ b/bench/codecs.h
+@@ -210,6 +210,15 @@ int64_t lzbench_memcpy(char *inbuf, size_t insize, char *outbuf, size_t outsize,
+ #endif
+ 
+ 
++#ifndef BENCH_REMOVE_LZ5
++    int64_t lzbench_lz5_compress(char *inbuf, size_t insize, char *outbuf, size_t outsize, codec_options_t *codec_options);
++    int64_t lzbench_lz5_decompress(char *inbuf, size_t insize, char *outbuf, size_t outsize, codec_options_t *codec_options);
++#else
++    #define lzbench_lz5_compress NULL
++    #define lzbench_lz5_decompress NULL
++#endif
++
++
+ #ifndef BENCH_REMOVE_LZ4
+     int64_t lzbench_lz4_compress(char *inbuf, size_t insize, char *outbuf, size_t outsize, codec_options_t *codec_options);
+     int64_t lzbench_lz4fast_compress(char *inbuf, size_t insize, char *outbuf, size_t outsize, codec_options_t *codec_options);
+diff --git a/bench/lz_codecs.cpp b/bench/lz_codecs.cpp
+index 14c88b1..d1b6c30 100644
+--- a/bench/lz_codecs.cpp
++++ b/bench/lz_codecs.cpp
+@@ -375,6 +375,30 @@ int64_t lzbench_lizard_decompress(char *inbuf, size_t insize, char *outbuf, size
+ 
+ 
+ 
++#ifndef BENCH_REMOVE_LZ5
++#include "lz/lz5/lz5.h"
++#include "lz/lz5/lz5hc.h"
++
++/* lz5-ex (the LZ5 1.5.x lineage, not Lizard).
++ * Level 0 is the plain fast path; levels 1..15 are the high-compression
++ * parsers. This mirrors how the lz5 CLI maps its -N option. */
++int64_t lzbench_lz5_compress(char *inbuf, size_t insize, char *outbuf, size_t outsize, codec_options_t *codec_options)
++{
++    if (codec_options->level < 1)
++        return LZ5_compress_default(inbuf, outbuf, (int)insize, (int)outsize);
++    return LZ5_compress_HC(inbuf, outbuf, (int)insize, (int)outsize, codec_options->level);
++}
++
++int64_t lzbench_lz5_decompress(char *inbuf, size_t insize, char *outbuf, size_t outsize, codec_options_t *codec_options)
++{
++    (void)codec_options;
++    return LZ5_decompress_safe(inbuf, outbuf, (int)insize, (int)outsize);
++}
++
++#endif
++
++
++
+ #ifndef BENCH_REMOVE_LZ4
+ #include "lz/lz4/lib/lz4.h"
+ #include "lz/lz4/lib/lz4hc.h"
+diff --git a/bench/lzbench.h b/bench/lzbench.h
+index 767c281..9555b2e 100644
+--- a/bench/lzbench.h
++++ b/bench/lzbench.h
+@@ -210,6 +210,7 @@ static const compressor_desc_t comp_desc[] =
+     { "lz4",        "lz4 1.10.0",              0,   0,    0,  BENCH_POOL_MT, lzbench_lz4_compress,        lzbench_lz4_decompress,        NULL,                    NULL },
+     { "lz4fast",    "lz4 1.10.0 --fast",       1,  99,    0,  BENCH_POOL_MT, lzbench_lz4fast_compress,    lzbench_lz4_decompress,        NULL,                    NULL },
+     { "lz4hc",      "lz4hc 1.10.0",            1,  12,    0,  BENCH_POOL_MT, lzbench_lz4hc_compress,      lzbench_lz4_decompress,        NULL,                    NULL },
++    { "lz5",        "lz5-ex 1.5.1",            0,  15,    0,  BENCH_POOL_MT, lzbench_lz5_compress,        lzbench_lz5_decompress,        NULL,                    NULL },
+     { "lzav",       "lzav 5.17",               1,   2,    0,  BENCH_POOL_MT, lzbench_lzav_compress,       lzbench_lzav_decompress,       NULL,                    NULL },
+     { "lzf",        "lzf 3.6",                 0,   1,    0,  BENCH_POOL_MT, lzbench_lzf_compress,        lzbench_lzf_decompress,        NULL,                    NULL },
+     { "lzfse",      "lzfse 2017-03-08",        0,   0,    0,  BENCH_POOL_MT, lzbench_lzfse_compress,      lzbench_lzfse_decompress,      lzbench_lzfse_init,      lzbench_lzfse_deinit },
