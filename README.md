@@ -1,20 +1,18 @@
 lz5-ex
 =========================
 
-**lz5-ex** is the *extended* line of [LZ5][LZ5]. It starts from the last 1.5.x
-release — 1.5.1, which is the maintenance release of the 1.5.0 code base — and is
-where further work on that lineage happens.
+**lz5-ex** is the *extended* line of [LZ5][LZ5], built on the last maintained
+release of the original code base. It is where further work on that lineage
+happens.
 
 The intent behind the "ex" is extension, not replacement: the project keeps the
 original LZ5 API and the original block and frame formats exactly as they are, so
-anything built against LZ5 1.5.x can link against lz5-ex unchanged. New
-capabilities are added on top, opt-in, without forcing existing users to migrate.
+anything built against LZ5 can link against lz5-ex unchanged. New capabilities
+are added on top, opt-in, without forcing existing users to migrate.
 
 - **Drop-in compatible.** Public symbols keep their `LZ5_*` names, headers keep
-  their names, and the byte format is unchanged. Data written by LZ5 1.5.0
+  their names, and the byte format is unchanged. Data written by LZ5
   decompresses identically, in both directions.
-- **Versioning.** The library version continues to track the upstream base it
-  derives from (currently `1.5.1`), so the relationship to LZ5 stays legible.
 
 | Component | Status |
 |-----------|--------|
@@ -27,7 +25,7 @@ capabilities are added on top, opt-in, without forcing existing users to migrate
 ### Relationship to LZ5 and Lizard
 
 LZ5 was renamed and continued as [Lizard][Lizard]. lz5-ex does *not* track
-Lizard: it stays on the 1.5.x API and format, which Lizard diverged from. If you
+Lizard: it stays on the LZ5 API and format, which Lizard diverged from. If you
 want the LZ5 API as it was, this is that lineage.
 
 [Lizard]: https://github.com/inikep/lizard
