@@ -70,11 +70,11 @@ Linux, GCC 14.2.0. Sorted by compression ratio, best first.
 | lz5-ex 1.5.1 -5        |    128.6 MB/s |    775.2 MB/s |    84455921 |  39.85 |
 | lz5-ex 1.5.1 -4        |    168.6 MB/s |    943.3 MB/s |    86505387 |  40.82 |
 | lz5-ex 1.5.1 -0        |    238.2 MB/s |    676.7 MB/s |    88218423 |  41.62 |
-| lz5-ex 1.5.1 -3        |    170.4 MB/s |    675.6 MB/s |    91813779 |  43.32 |
-| lz5-ex 1.5.1 -2        |    240.8 MB/s |    848.9 MB/s |    96339288 |  45.46 |
+| lz5-ex 1.5.1 -3        |    181.5 MB/s |    729.9 MB/s |    91127983 |  43.00 |
+| lz5-ex 1.5.1 -2        |    271.3 MB/s |    881.3 MB/s |    96339288 |  45.46 |
 | lizard 2.1 -20         |    321.3 MB/s |   1770.7 MB/s |    96927713 |  45.73 |
 | lz4 1.10.0             |    533.2 MB/s |   3586.2 MB/s |   100880147 |  47.60 |
-| lz5-ex 1.5.1 -1        |    415.8 MB/s |   1470.8 MB/s |   109315379 |  51.58 |
+| lz5-ex 1.5.1 -1        |    421.4 MB/s |   1515.8 MB/s |   109315379 |  51.58 |
 
 `Ratio` is the compressed size as a percentage of the original, so lower is
 better. Sizes are exact; the speeds are single-thread figures from one machine
@@ -90,11 +90,23 @@ Levels `-1` to `-3` were reworked in lz5-ex. The 1.5.x strategy checked a
 single candidate from an 8K-entry hash table and never indexed the positions
 it skipped, so `-1` compressed worse than the default while being barely
 faster (53.56% at 501 MB/s). The reworked parser walks forward with an
-accelerating step, indexes every position it tests and keeps a second
-candidate from a 3-byte hash, which the format supports and the old strategy
-never used: `-1` gains 2 points of ratio at similar speed, `-2` gains 3.7 at
-roughly half of it, `-3` gains 1.8. Output remains decodable by LZ5 1.5.0 in
-both directions (see `tests/test_compat_lz5_15.sh`).
+accelerating step and indexes every position it tests, and its candidate
+finder follows the lz6 line: the main hash first, then - only when that finds
+nothing, where they are pure upside - the previous offset (the one-byte
+codeword of the format) and a 3-byte index that the 1.5.x fast parser never
+used. A bare 3-byte match is only taken when its encoded price beats the
+literals it replaces. The next probe's hash load is prefetched, which is
+output-neutral and buys ~10% encode speed on its own. Result on Silesia,
+against the 1.5.1 table: `-1` 53.56% -> 51.58%, `-2` 49.11% -> 45.46%, `-3`
+45.09% -> 43.00%, with encode speed at 84%, 66% and 62% of the original.
+Output remains decodable by LZ5 1.5.0 in both directions (see
+`tests/test_compat_lz5_15.sh`).
+
+The fast parser also carries an optional lazy-match pass, off in the shipped
+table: a level with `sufficientLength` set looks one and two positions ahead
+for a clearly longer match. Measured on Silesia it buys ~1.2 points of ratio
+on `-2` for ~19% encode speed, which is why it is left disabled; it is a knob
+to be re-measured on the target content.
 
 Reproduce with `bench/run-silesia.sh`. The raw lzbench output is kept in
 `bench/silesia.csv` and the per-codec aggregation in

@@ -1691,6 +1691,98 @@ _Encode:
 
 
 
+/* Finder for the fast strategy. The main hash candidate is checked first, so
+ * the common case costs what it always did; the last offset (the cheapest
+ * codeword the format has) and the 3-byte index are only consulted when the
+ * main candidate finds nothing, where they are pure upside. Unlike
+ * LZ5HC_FindMatchFast - used by the chain strategies, where the chain walk
+ * supplies the long matches and a 3-byte candidate is only worth a look inside
+ * the short-offset range - the 3-byte candidate here is extended and
+ * considered at any distance; it is rejected only when the encoded price says
+ * a bare 3-byte match would cost more than the literals it replaces. */
+FORCE_INLINE int LZ5HC_FindMatchFast3 (LZ5HC_Data_Structure* ctx, U32 matchIndex, U32 matchIndex3,
+                                       const BYTE* ip, const BYTE* const iLimit,
+                                       const BYTE** matchpos)
+{
+    const BYTE* const base = ctx->base;
+    const BYTE* const dictBase = ctx->dictBase;
+    const BYTE* const lowPrefixPtr = base + ctx->dictLimit;
+    const U32 dictLimit = ctx->dictLimit;
+    const U32 maxDistance = (1 << ctx->params.windowLog);
+    const U32 current = (U32)(ip - base);
+    const U32 lowLimit = (ctx->lowLimit + maxDistance > current) ? ctx->lowLimit : current - (maxDistance - 1);
+    const BYTE* match;
+    size_t ml=0, mlt;
+
+    if (matchIndex < current && matchIndex >= lowLimit)
+    {
+        if (matchIndex >= dictLimit)
+        {
+            match = base + matchIndex;
+            if (MEM_read32(match) == MEM_read32(ip))
+            {
+                mlt = MEM_count(ip+MINMATCH, match+MINMATCH, iLimit) + MINMATCH;
+                ml = mlt; *matchpos = match;
+            }
+        }
+        else
+        {
+            match = dictBase + matchIndex;
+            if (MEM_read32(match) == MEM_read32(ip))
+            {
+                const BYTE* vLimit = ip + (dictLimit - matchIndex);
+                if (vLimit > iLimit) vLimit = iLimit;
+                mlt = MEM_count(ip+MINMATCH, match+MINMATCH, vLimit) + MINMATCH;
+                if ((ip+mlt == vLimit) && (vLimit < iLimit))
+                    mlt += MEM_count(ip+mlt, base+dictLimit, iLimit);
+                ml = mlt; *matchpos = base + matchIndex;   /* virtual matchpos */
+            }
+        }
+    }
+
+    if (!ml)
+    {
+        match = ip - ctx->last_off;
+        if (match >= lowPrefixPtr && MEM_read24(match) == MEM_read24(ip))
+        {
+            ml = MEM_count(ip+MINMATCH, match+MINMATCH, iLimit) + MINMATCH;
+            *matchpos = match;
+        }
+    }
+
+#if MINMATCH == 3
+    if (matchIndex3 < current && matchIndex3 >= lowLimit && matchIndex3 >= dictLimit)
+    {
+        match = base + matchIndex3;
+        if (MEM_read24(match) == MEM_read24(ip))
+        {
+            mlt = MEM_count(ip+MINMATCH, match+MINMATCH, iLimit) + MINMATCH;
+            if (!ml)
+            {
+                /* a bare 3-byte match only pays for a long offset when it extends */
+                if (mlt > MINMATCH || LZ5_MATCH_COST(mlt - MINMATCH, (size_t)(ip - match)) < LZ5_LIT_ONLY_COST(mlt))
+                    { ml = mlt; *matchpos = match; }
+            }
+            else if (mlt > ml && LZ5HC_better_price((ip - *matchpos), ml, (ip - match), mlt, ctx->last_off))
+                { ml = mlt; *matchpos = match; }
+        }
+    }
+#endif
+
+    return (int)ml;
+}
+
+
+/* Software prefetch hint, as used by the seq codec of the lz6 line: the next
+   probe's hash-table load is started while the current candidate is still
+   being compared. Output-neutral, so it is safe on every level. A prefetch of
+   a wild address is harmless (never faults), no bounds check needed. */
+#if defined(__GNUC__) || defined(__clang__)
+#  define LZ5_PREFETCH(p)  __builtin_prefetch((const void*)(p))
+#else
+#  define LZ5_PREFETCH(p)  ((void)(p))
+#endif
+
 static int LZ5HC_compress_fast (
     LZ5HC_Data_Structure* ctx,
     const char* source,
@@ -1718,10 +1810,15 @@ static int LZ5HC_compress_fast (
     const U32 hBits  = ctx->params.hashLog;
     const U32 h3Bits = ctx->params.hashLog3;
     const U32 sl     = ctx->params.searchLength;
-    const U32 maxDistance = (1 << ctx->params.windowLog);
-    const U32 dictLimit = ctx->dictLimit;
     const int accel = (ctx->params.searchNum>0)?(int)ctx->params.searchNum:1;
+    /* lazy-match sufficiency: a match at least this short is worth looking one
+     * and two positions ahead for a better one. 0 disables the check, which is
+     * what the speed-first level wants. */
+    const int lazyLimit = (int)ctx->params.sufficientLength;
     const U32 skipTrigger = 6;   /* same accelerating-step ramp as the level-0 parser */
+    /* the price-aware 3-candidate finder costs more per position; it is only
+     * worth it on the levels that carry a 3-byte index */
+    const int usePlus = (h3Bits != 0);
 
     /* init */
     ctx->inputBuffer = (const BYTE*)source;
@@ -1733,9 +1830,8 @@ static int LZ5HC_compress_fast (
     /* Main Loop. The 1.5.x strategy checked a single candidate from an 8K
      * table and never indexed the positions it skipped, so the table stayed
      * sparse and stale and levels 1-3 compressed worse than level 0. This
-     * walks forward with the same accelerating step as the level-0 parser,
-     * indexes every position it tests, and keeps a second candidate from a
-     * 3-byte hash (MINMATCH=3 matches, which the main hash cannot see). */
+     * walks forward with the same accelerating step as the level-0 parser and
+     * indexes every position it tests, so the candidate it finds is real. */
     if (ip < mflimit)
     while (ip < mflimit)
     {
@@ -1747,45 +1843,53 @@ static int LZ5HC_compress_fast (
         for ( ; ; )
         {
             U32 h = forwardH;
-            U32 current;
+            U32 current, idx, idx3 = 0;
 
             ip = forwardIp;
             forwardIp += step;
             step = (searchMatchNb++ >> skipTrigger);
             if (forwardIp > mflimit) goto _last_literals;
             forwardH = LZ5HC_hashPtr(forwardIp, hBits, sl);
+            LZ5_PREFETCH(&HashTable[forwardH]);
 
-            /* candidate from the main hash, then index this position */
-            ml = LZ5HC_FindMatchFastest (ctx, HashTable[h], ip, matchlimit, (&ref));
-            HashTable[h] = (U32)(ip - base);
-
-            /* second candidate : 3-byte index, current block only. The check
-             * is skipped when the main hash already produced a comfortable
-             * match - a 3-byte start cannot extend past what a longer match
-             * already covers - but the position is indexed either way so the
-             * table stays dense for the next short-match situation. */
+            current = (U32)(ip - base);
+            idx = HashTable[h];
+            HashTable[h] = current;
             if (h3Bits)
             {
                 U32* const h3Pos = &HashTable3[LZ5HC_hash3Ptr(ip, h3Bits)];
-                const U32 lowLimit = (ctx->lowLimit + maxDistance > (U32)(ip - base))
-                                   ? ctx->lowLimit : (U32)(ip - base) - (maxDistance - 1);
-                current = (U32)(ip - base);
-                {
-                    const U32 idx3 = *h3Pos;
-                    *h3Pos = current;
-                    if (ml < 8 && idx3 && idx3 < current && idx3 >= lowLimit && idx3 >= dictLimit)
-                    {
-                        const BYTE* const m3 = base + idx3;
-                        if (m3[0]==ip[0] && m3[1]==ip[1] && m3[2]==ip[2])
-                        {
-                            size_t const mlt = MEM_count(ip+MINMATCH, m3+MINMATCH, matchlimit) + MINMATCH;
-                            if ((int)mlt > ml) { ml = (int)mlt; ref = m3; }
-                        }
-                    }
-                }
+                idx3 = *h3Pos;
+                *h3Pos = current;
             }
 
+            ml = usePlus ? LZ5HC_FindMatchFast3 (ctx, idx, idx3, ip, matchlimit, (&ref))
+                         : LZ5HC_FindMatchFastest (ctx, idx, ip, matchlimit, (&ref));
             if (ml) break;
+        }
+
+        /* Lazy match: if the next position has a clearly longer match, emit
+         * this one as a literal and take the better one. One extra lookup per
+         * emitted match; the thresholds mirror the ones the seq codec of the
+         * lz6 line settled on. */
+        if (lazyLimit && ml < lazyLimit && (ip + 1) < mflimit)
+        {
+            const BYTE* ref2 = NULL;
+            int ml2 = LZ5HC_FindMatchFastest(ctx, HashTable[LZ5HC_hashPtr(ip + 1, hBits, sl)], ip + 1, matchlimit, (&ref2));
+            if (ml2 >= ml + 2)
+            {
+                ip++;   /* the old position becomes a literal */
+                continue;
+            }
+            if (ml < lazyLimit/2 && (ip + 2) < mflimit)
+            {
+                const BYTE* ref3 = NULL;
+                int ml3 = LZ5HC_FindMatchFastest(ctx, HashTable[LZ5HC_hashPtr(ip + 2, hBits, sl)], ip + 2, matchlimit, (&ref3));
+                if (ml3 >= ml + 3)
+                {
+                    ip += 2;
+                    continue;
+                }
+            }
         }
 
         {
