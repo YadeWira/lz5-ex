@@ -1,0 +1,68 @@
+# Directories
+_lz5bench/
+_codelite/
+_visual/
+cmake_unofficial/
+contrib/
+debian/
+examples/
+versionsTest/
+visual/
+
+# Archives
+*.zip 
+
+# Release artifacts
+lz5-*.tar.gz
+lz5-*.tar.gz.sha256
+lz5-*.sha256
+
+# Object files
+*.o
+*.ko
+
+# Libraries
+*.lib
+*.a
+
+# Shared objects (inc. Windows DLLs)
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# Executables. Anchored with a slash so they do not also match the source
+# directories named after them under projects/VS2010/.
+*.exe
+*.out
+*.app
+/programs/lz5
+/programs/lz5_32
+/programs/lz5cat
+/programs/unlz5
+/programs/datagen
+/programs/fullbench
+/programs/fullbench32
+/programs/frametest
+/programs/frametest32
+/tests/test_hc_tables
+
+# Test leftovers
+tmp
+tmp1
+tmp2
+tmp3
+tmpSrc
+tmpRes
+gdb_cmd
+
+# Visual Studio build output (the project files themselves are tracked, so the
+# MSVC CI job has something to build).
+projects/VS2010/*/Release/
+projects/VS2010/*/Debug/
+projects/VS2010/*/x64/
+projects/VS2010/*/Win32/
+projects/VS2010/*/*.suo
+projects/VS2010/*/*.user
+projects/VS2010/*.suo
+projects/VS2010/*.user

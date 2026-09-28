@@ -1,0 +1,43 @@
+Source: lz5
+Version: 1.5.1
+Section: utils
+Priority: optional
+Maintainer: LZ5 maintainers <lz5@example.org>
+Build-Depends: debhelper (>= 9), gcc, make
+Standards-Version: 4.1.4
+Homepage: https://github.com/lz4/lz5
+
+Package: lz5
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: fast and efficient LZ5 compression library (CLI)
+ LZ5 is a lossless data compressor built around a very fast, small core and a
+ complementary high-compression variant. This package ships the command line
+ tool.
+ .
+ This is the maintenance line based on the last 1.5.x release; see the NEWS
+ file shipped in the source package for the list of fixes.
+
+Package: liblz5-1
+Section: libs
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: fast and efficient LZ5 compression library
+ The shared library implementing the LZ5 block and frame APIs.
+
+Package: liblz5-dev
+Section: libdevel
+Architecture: any
+Depends: liblz5-1 (= ${binary:Version}), ${misc:Depends}
+Description: development files for liblz5
+ Headers, static library and the liblz5.pc pkg-config file.
+
+Package: liblz5-1-dbgsym
+Section: debug
+Architecture: any
+Depends: liblz5-1 (= ${binary:Version})
+Build-Profile: dbgsym
+Description: debug symbols for liblz5
+
+# The CLI is GPLv2 while the library is BSD; keep them in separate packages so
+# the licences stay unambiguous for anybody linking against liblz5.

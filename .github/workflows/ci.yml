@@ -1,0 +1,130 @@
+name: CI
+
+on:
+  push:
+    branches: [ '*' ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: gcc (linux, default flags)
+            os: ubuntu-latest
+            cc: gcc
+            makeflags: ''
+          - name: gcc -Werror
+            os: ubuntu-latest
+            cc: gcc
+            makeflags: 'WFLAGS="-Wall -Wextra -Wundef -Wshadow -Wcast-align -Wcast-qual -Wstrict-prototypes -pedantic -Wno-variadic-macros -Werror"'
+          - name: clang -Werror
+            os: ubuntu-latest
+            cc: clang
+            makeflags: 'WFLAGS="-Wall -Wextra -Wundef -Wshadow -Wcast-align -Wcast-qual -Wstrict-prototypes -pedantic -Wno-variadic-macros -Werror"'
+          - name: clang -Wconversion
+            os: ubuntu-latest
+            cc: clang
+            makeflags: 'MOREFLAGS="-Wconversion -Wno-sign-conversion"'
+          - name: clang UBSan
+            os: ubuntu-latest
+            cc: clang
+            makeflags: 'MOREFLAGS="-g -fsanitize=undefined"'
+          - name: gcc ASan+UBSan
+            os: ubuntu-latest
+            cc: gcc
+            makeflags: 'MOREFLAGS="-g -fsanitize=address,undefined -fno-omit-frame-pointer"'
+          - name: macOS (clang)
+            os: macos-latest
+            cc: clang
+            makeflags: ''
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install valgrind
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y valgrind
+
+      - name: Build
+        run: make clean && make CC=${{ matrix.cc }}
+
+      - name: Round-trip smoke test
+        run: |
+          cd programs
+          make lz5 datagen CC=${{ matrix.cc }}
+          ./datagen -g4M | ./lz5 -9 | ./lz5 -t
+          ./datagen -g1M -P99 | ./lz5 -12 | ./lz5 -t
+
+      - name: Test suite (excluding the 6 GB cases)
+        run: |
+          cd programs
+          make lz5 datagen fullbench frametest CC=${{ matrix.cc }}
+          make test-lz5-multiple test-lz5-contentSize test-lz5-frame-concatenation test-lz5-sparse CC=${{ matrix.cc }}
+          ./fullbench --no-prompt -i1 ../lib/lz5.c
+          ./frametest -i64
+
+  valgrind:
+    name: valgrind
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install valgrind
+        run: sudo apt-get update && sudo apt-get install -y valgrind
+      - name: Build
+        run: make clean && make
+      - name: valgrind suite
+        run: |
+          cd programs
+          make lz5 datagen frametest fullbench
+          ./datagen -g16KB > tmp
+          valgrind --leak-check=yes --error-exitcode=1 ./lz5 -9 -B -f tmp /dev/null
+          valgrind --leak-check=yes --error-exitcode=1 ./lz5 -t tmp
+          valgrind --leak-check=yes --error-exitcode=1 ./fullbench -i1 tmp
+          valgrind --leak-check=yes --error-exitcode=1 ./frametest -i64
+          rm -f tmp
+
+  poisoned-heap:
+    name: poisoned heap (MALLOC_PERTURB_)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: make clean && make
+      - name: Compression with non-zeroed heap
+        run: |
+          # The HC tables are allocated with calloc(); this job proves that a
+          # recycled (dirty) heap no longer changes the compressed output nor
+          # crashes. See the 1.5.1 maintenance notes.
+          cd programs
+          make lz5 datagen
+          for lvl in 1 6 9 12; do
+            for run in 1 2 3; do
+              MALLOC_PERTURB_=170 ./datagen -g2M | MALLOC_PERTURB_=170 ./lz5 -$lvl 2>/dev/null | md5sum
+            done | sort -u | wc -l | grep -qx 1 \
+              || { echo "level $lvl is not deterministic under a poisoned heap"; exit 1; }
+          done
+          echo "all levels deterministic under MALLOC_PERTURB_"
+
+  msvc:
+    name: msvc (windows)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Build
+        shell: cmd
+        run: msbuild projects\VS2010\lz5.sln /p:Configuration=Release /p:Platform=x64 /v:minimal
+      - name: Build (Win32)
+        shell: cmd
+        run: msbuild projects\VS2010\lz5.sln /p:Configuration=Release /p:Platform=Win32 /v:minimal
+      - name: Round-trip
+        shell: cmd
+        run: |
+          cd projects\VS2010\x64\Release
+          datagen.exe -g4M | lz5.exe -9 | lz5.exe -t
+          datagen.exe -g1M -P99 | lz5.exe -12 | lz5.exe -t

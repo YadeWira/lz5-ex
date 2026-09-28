@@ -1,0 +1,118 @@
+lz5-ex starts here. It is the extended line of LZ5, forked from the 1.5.1
+maintenance release of the 1.5.0 code base. The API, the header names and the
+block and frame formats are unchanged, so it stays drop-in compatible with LZ5
+1.5.x. The entries below this line are the maintenance work that the fork is
+based on. See README.md for what the "ex" is for.
+
+v1.5.1 (maintenance release)
+- fixed: high-compression tables (hashTable, hashTable3, chainTable) were allocated
+  with malloc() and left uninitialised, so the match search could read stale heap
+  contents. On a fresh process the OS supplies zeroed pages and the bug stays
+  hidden, but as soon as the allocator recycles a dirty block the search reads
+  garbage: the compression ratio becomes unpredictable and the process can crash.
+  All three tables are now allocated with calloc(). (lib/lz5hc.c)
+- fixed: hashLog3 == 0 (compression levels 1..3, which have no 3-byte hash table)
+  still reached code that computed LZ5HC_hash3(u, 0), i.e. a 32-bit shift by 32.
+  That is undefined behaviour; on x86 the shift count is masked to 5 bits, which
+  yields a huge index and an out-of-bounds write, crashing levels 1-3 on
+  LZ5_compress_HC_continue(). Every hashTable3 access is now guarded by
+  `hashLog3 != 0`. (lib/lz5hc.c, lib/lz5common.h)
+- fixed: LZ5_createStreamHC() never called LZ5_resetStreamHC(), leaving `base` and
+  the rest of the context uninitialised; the deferred auto-init in
+  LZ5_compressHC_continue_generic() then could not trigger. (lib/lz5hc.c)
+- fixed: LZ5F_createCompressionContext() initialised only `version` and `cStage`,
+  leaving lz5CtxLevel, lz5CtxPtr, maxBufferSize and tmpBuff with heap garbage.
+  (lib/lz5frame.c)
+- fixed: negative size arguments were only caught by an unsigned comparison
+  trick, which reported them as "input too large" and returned 0 instead of
+  rejecting them. LZ5_compress_*_extState(), LZ5_compress_HC_continue(),
+  LZ5_compress_destSize_extState(), LZ5_compress_fast_continue(),
+  LZ5_decompress_safe(), LZ5_decompress_safe_partial() and
+  LZ5_decompress_safe_continue() now test for negative sizes explicitly.
+  (lib/lz5.c, lib/lz5hc.c)
+- fixed: the encoder's output-limit check estimated the encoded match length as
+  (matchLength>>8), which underestimates the real byte count by up to 5 for very
+  long matches. olimit is now checked before each length byte is written, so the
+  bound is exact and a caller who sized dst exactly can no longer overflow it.
+  (lib/lz5.c)
+- fixed: LZ5_sizeofState() and LZ5_sizeofStreamState() were declared with an empty
+  parameter list instead of (void), which means "unspecified arguments" in C and
+  trips -Wstrict-prototypes. (lib/lz5.c)
+- fixed: LZ5_decompress_generic() added dictSize to a NULL dictStart, which is
+  undefined behaviour even when dictSize is 0. (lib/lz5.c)
+- fixed: LZ5F_compressUpdate() did pointer arithmetic on a not-yet-allocated
+  tmpBuff. (lib/lz5frame.c)
+- fixed: LZ5_compress_generic() added dictSize to a NULL dictionary, and
+  subtracted that NULL from source, on the noDict path. Same class of
+  undefined behaviour, only reachable on the extended-dictionary code paths.
+  (lib/lz5.c)
+- fixed: the encoder wrote match[refDelta-1] with refDelta a size_t, which
+  underflows to SIZE_MAX when refDelta is 0. The pointer is offset first now.
+  (lib/lz5.c)
+- fixed: LZ5F_decompress() computed srcBuffer + srcSize and dstBuffer + dstSize
+  on possibly-NULL buffers. (lib/lz5frame.c)
+- The library now builds and runs clean under AddressSanitizer and
+  UndefinedBehaviorSanitizer (previously 4 distinct UB sites). (lib/)
+- fixed: LZ5F_compressBound() computed the block count in an `unsigned`, which
+  wraps past 4G blocks and returns a bound far too small; LZ5F_compressFrame()
+  trusts that bound to decide whether dstBuffer is large enough. (lib/lz5frame.c)
+- fixed: LZ5F_compressUpdate() did not check srcSize against LZ5_MAX_INPUT_SIZE
+  before handing it to code that narrows size_t to int. (lib/lz5frame.c)
+- fixed: the decompression context stored the result of LZ5F_getBlockSize()
+  without checking LZ5F_isError(), so a defensive check upstream depended on
+  being unreachable. (lib/lz5frame.c)
+- fixed: LZ5_saveDictHC() could recompute `base` from a truncated U32 once the
+  index space exceeded 4 GB; it now refuses to continue instead. (lib/lz5hc.c)
+- fixed: multi-file decompression computed `ifnSize - suffixSize` before checking
+  that the name was at least as long as the suffix, underflowing size_t. Also
+  checks the malloc() result, like the rest of the file does. (programs/lz5io.c)
+- fixed: reading a filename of fewer than 4 characters underflowed
+  `strlen(input_filename) - 4`; also added the missing calloc() NULL check.
+  (programs/lz5cli.c)
+- build: dropped -ffast-math from the default flags. It was also never used
+  (FFLAGS is not part of FLAGS), so this is a documentation change; the flag
+  remains available through FFLAGS. (programs/Makefile)
+- build: `make examples` no longer fails; this source tree ships no examples/
+  directory, so the target now says so. (Makefile)
+- build: removed test-fuzzer / test-fuzzer32, which referenced a `fuzzer` binary
+  that does not exist in this tree. frametest covers the same ground.
+  (programs/Makefile)
+- build: replaced the dead Travis and AppVeyor configurations with a GitHub
+  Actions workflow covering gcc, clang, -Werror, -Wconversion, ASan/UBSan,
+  valgrind, macOS and MSVC. (.github/workflows/ci.yml)
+- tests: added tests/test_hc_tables.c, a regression test for the table
+  initialisation and hashLog3 bugs. It crashes on an unpatched build and is run
+  against a poisoned heap (MALLOC_PERTURB_) by `make -C tests test`.
+
+API compatibility, the block format and the frame format are unchanged; data
+compressed by 1.5.0 and 1.5.1 is fully interchangeable in both directions.
+
+v1.5
+- introduced compatibility with Visual C++ 2010 and newer
+- attached Visual Studio 2010 project
+- thoroughly tested with 21 Travis CI and 7 AppVeyor CI tests
+- fixed bug with reusing a context in lz5frame.c (LZ5F_compressBegin and LZ5_compress_HC_continue)
+- fixed rare bug in match finder (concerns levels 4 - 15)
+
+v1.4.1
+- fixed bug with a backward match extension (level 11 and 12)
+
+v1.4
+- improved: levels from 13 to 15 (maximum compression ratio)
+- added a new parser: LZ5HC_optimal_price_bt
+- updated documentation: lz5_Block_format.md and lz5_Frame_format.md 
+- changed lz5.exe: the "-B" option with block size [1-7] = 64KB, 256KB, 1MB, 4MB, 16MB, 64MB, 256MB (default : 4 = 4MB)
+ 
+v1.3.3
+- added: new levels from 11 to 18 (maximum compression ratio)
+- added: a new parser: LZ5HC_optimal_price
+- fixed: buffer-overflow during decompression (thanks to m^2)
+
+r132
+- improved compression ratio
+- added: new parsers: LZ5HC_fast, LZ5HC_price_fast, LZ5HC_lowest_price
+- added: a special 1-byte codeword for the last occured offset
+- added: support for 3-byte long matches (MINMATCH = 3)
+
+r131
+The first release based on LZ4 r132 dev
