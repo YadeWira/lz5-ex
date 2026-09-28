@@ -718,7 +718,21 @@ FORCE_INLINE int LZ5HC_GetAllMatches (
         {
             match = base + matchIndex;
 
-            if ((/*fullSearch ||*/ ip[best_mlen] == match[best_mlen]) && (MEM_read24(match) == MEM_read24(ip)))
+            /* Bounds-guarded pre-filter. The peek reads ip[best_mlen], which
+             * runs past the end of the input buffer whenever a block ends at
+             * the end of its allocation (ASan: found with -11/-12, present
+             * upstream in LZ5 1.5.0). A candidate whose peek would be out of
+             * bounds can never win: matches are clamped at iHighLimit and
+             * updates are strict `>`, so its length is <= best_mlen and
+             * skipping it loses nothing real.
+             * Note this is NOT byte-identical to LZ5 1.5.0 in that corner: the
+             * original decided which candidates to evaluate (and whether to hit
+             * the early break below) based on out-of-bounds heap bytes, which
+             * is undefined behaviour that can also fault. The streams emitted
+             * here are still fully 1.5.0-decodable in both directions. */
+            if ((best_mlen < (size_t)(iHighLimit - ip))
+                && (/*fullSearch ||*/ ip[best_mlen] == match[best_mlen])
+                && (MEM_read24(match) == MEM_read24(ip)))
             {
                 size_t mlt = MINMATCH + MEM_count(ip+MINMATCH, match+MINMATCH, iHighLimit);
                 int back = 0;
