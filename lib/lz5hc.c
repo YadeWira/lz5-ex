@@ -1713,38 +1713,95 @@ static int LZ5HC_compress_fast (
     const BYTE* ref=NULL;
     const BYTE* lowPrefixPtr = ctx->base + ctx->dictLimit;
     const BYTE* const base = ctx->base;
-    U32* HashPos;
-    U32* HashTable  = ctx->hashTable;
-	const int accel = (ctx->params.searchNum>0)?ctx->params.searchNum:1;
-    
+    U32* const HashTable  = ctx->hashTable;
+    U32* const HashTable3 = ctx->hashTable3;
+    const U32 hBits  = ctx->params.hashLog;
+    const U32 h3Bits = ctx->params.hashLog3;
+    const U32 sl     = ctx->params.searchLength;
+    const U32 maxDistance = (1 << ctx->params.windowLog);
+    const U32 dictLimit = ctx->dictLimit;
+    const int accel = (ctx->params.searchNum>0)?(int)ctx->params.searchNum:1;
+    const U32 skipTrigger = 6;   /* same accelerating-step ramp as the level-0 parser */
+
     /* init */
-	ctx->inputBuffer = (const BYTE*)source;
-	ctx->outputBuffer = (const BYTE*)dest;
-	ctx->end += inputSize;
+    ctx->inputBuffer = (const BYTE*)source;
+    ctx->outputBuffer = (const BYTE*)dest;
+    ctx->end += inputSize;
 
     ip++;
 
-    /* Main Loop */
+    /* Main Loop. The 1.5.x strategy checked a single candidate from an 8K
+     * table and never indexed the positions it skipped, so the table stayed
+     * sparse and stale and levels 1-3 compressed worse than level 0. This
+     * walks forward with the same accelerating step as the level-0 parser,
+     * indexes every position it tests, and keeps a second candidate from a
+     * 3-byte hash (MINMATCH=3 matches, which the main hash cannot see). */
+    if (ip < mflimit)
     while (ip < mflimit)
     {
-        HashPos = &HashTable[LZ5HC_hashPtr(ip, ctx->params.hashLog, ctx->params.searchLength)];
-        ml = LZ5HC_FindMatchFastest (ctx, *HashPos, ip, matchlimit, (&ref));
-        *HashPos =  (U32)(ip - base);
-        if (!ml) { ip+=accel; continue; }
+        const BYTE* forwardIp = ip;
+        unsigned step = 1;
+        unsigned searchMatchNb = (unsigned)(accel << skipTrigger);
+        U32 forwardH = LZ5HC_hashPtr(forwardIp, hBits, sl);
 
-		{
-			int back = 0;
-			while ((ip + back > anchor) && (ref + back > lowPrefixPtr) && (ip[back - 1] == ref[back - 1])) back--;
-			ml -= back;
-			ip += back;
-			ref += back;
-		}
+        for ( ; ; )
+        {
+            U32 h = forwardH;
+            U32 current;
+
+            ip = forwardIp;
+            forwardIp += step;
+            step = (searchMatchNb++ >> skipTrigger);
+            if (forwardIp > mflimit) goto _last_literals;
+            forwardH = LZ5HC_hashPtr(forwardIp, hBits, sl);
+
+            /* candidate from the main hash, then index this position */
+            ml = LZ5HC_FindMatchFastest (ctx, HashTable[h], ip, matchlimit, (&ref));
+            HashTable[h] = (U32)(ip - base);
+
+            /* second candidate : 3-byte index, current block only. The check
+             * is skipped when the main hash already produced a comfortable
+             * match - a 3-byte start cannot extend past what a longer match
+             * already covers - but the position is indexed either way so the
+             * table stays dense for the next short-match situation. */
+            if (h3Bits)
+            {
+                U32* const h3Pos = &HashTable3[LZ5HC_hash3Ptr(ip, h3Bits)];
+                const U32 lowLimit = (ctx->lowLimit + maxDistance > (U32)(ip - base))
+                                   ? ctx->lowLimit : (U32)(ip - base) - (maxDistance - 1);
+                current = (U32)(ip - base);
+                {
+                    const U32 idx3 = *h3Pos;
+                    *h3Pos = current;
+                    if (ml < 8 && idx3 && idx3 < current && idx3 >= lowLimit && idx3 >= dictLimit)
+                    {
+                        const BYTE* const m3 = base + idx3;
+                        if (m3[0]==ip[0] && m3[1]==ip[1] && m3[2]==ip[2])
+                        {
+                            size_t const mlt = MEM_count(ip+MINMATCH, m3+MINMATCH, matchlimit) + MINMATCH;
+                            if ((int)mlt > ml) { ml = (int)mlt; ref = m3; }
+                        }
+                    }
+                }
+            }
+
+            if (ml) break;
+        }
+
+        {
+            int back = 0;
+            while ((ip + back > anchor) && (ref + back > lowPrefixPtr) && (ip[back - 1] == ref[back - 1])) back--;
+            ml -= back;
+            ip += back;
+            ref += back;
+        }
 
         if (LZ5HC_encodeSequence(ctx, &ip, &op, &anchor, ml, ref, limit, oend)) return 0;
 
     }
 
     /* Encode Last Literals */
+    _last_literals:
     {
         int lastRun = (int)(iend - anchor);
         if ((limit) && (((char*)op - dest) + lastRun + 1 + ((lastRun+255-RUN_MASK)/255) > (U32)maxOutputSize)) return 0;  /* Check output limit */

@@ -70,20 +70,31 @@ Linux, GCC 14.2.0. Sorted by compression ratio, best first.
 | lz5-ex 1.5.1 -5        |    128.6 MB/s |    775.2 MB/s |    84455921 |  39.85 |
 | lz5-ex 1.5.1 -4        |    168.6 MB/s |    943.3 MB/s |    86505387 |  40.82 |
 | lz5-ex 1.5.1 -0        |    238.2 MB/s |    676.7 MB/s |    88218423 |  41.62 |
-| lz5-ex 1.5.1 -3        |    307.5 MB/s |   1182.5 MB/s |    95574729 |  45.09 |
+| lz5-ex 1.5.1 -3        |    170.4 MB/s |    675.6 MB/s |    91813779 |  43.32 |
+| lz5-ex 1.5.1 -2        |    240.8 MB/s |    848.9 MB/s |    96339288 |  45.46 |
 | lizard 2.1 -20         |    321.3 MB/s |   1770.7 MB/s |    96927713 |  45.73 |
 | lz4 1.10.0             |    533.2 MB/s |   3586.2 MB/s |   100880147 |  47.60 |
-| lz5-ex 1.5.1 -2        |    407.7 MB/s |   1383.7 MB/s |   104073879 |  49.11 |
-| lz5-ex 1.5.1 -1        |    500.7 MB/s |   1504.3 MB/s |   113525877 |  53.56 |
+| lz5-ex 1.5.1 -1        |    415.8 MB/s |   1470.8 MB/s |   109315379 |  51.58 |
 
 `Ratio` is the compressed size as a percentage of the original, so lower is
 better. Sizes are exact; the speeds are single-thread figures from one machine
 and will differ on other hardware.
 
 `-0` is the plain fast path; `-1` to `-15` are the high-compression parsers. The
-levels are not one smooth curve: `-1` to `-3` are the "fast" HC profiles tuned
-for speed, which is why `-0` compresses better than `-1` while also being
-faster. From `-4` upwards the ratio improves monotonically with the level.
+levels are not one smooth curve: `-1` to `-3` are the "fast" HC profiles, which
+trade ratio for speed and sit above `-0` on the speed axis, which is why `-0`
+compresses better than any of them. From `-4` upwards the ratio improves
+monotonically with the level.
+
+Levels `-1` to `-3` were reworked in lz5-ex. The 1.5.x strategy checked a
+single candidate from an 8K-entry hash table and never indexed the positions
+it skipped, so `-1` compressed worse than the default while being barely
+faster (53.56% at 501 MB/s). The reworked parser walks forward with an
+accelerating step, indexes every position it tests and keeps a second
+candidate from a 3-byte hash, which the format supports and the old strategy
+never used: `-1` gains 2 points of ratio at similar speed, `-2` gains 3.7 at
+roughly half of it, `-3` gains 1.8. Output remains decodable by LZ5 1.5.0 in
+both directions (see `tests/test_compat_lz5_15.sh`).
 
 Reproduce with `bench/run-silesia.sh`. The raw lzbench output is kept in
 `bench/silesia.csv` and the per-codec aggregation in
