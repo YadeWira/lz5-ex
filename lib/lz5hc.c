@@ -71,12 +71,23 @@ int LZ5_alloc_mem_HC(LZ5HC_Data_Structure* ctx, int compressionLevel)
 
     ctx->hashTable3 = ctx->hashTable + ((size_t)1 << ctx->params.hashLog);
 
-    ctx->chainTable = (U32*) calloc((size_t)1 << ctx->params.contentLog, sizeof(U32));
-    if (!ctx->chainTable)
+    /* The chain table is read and written only by the price, lowest-price and
+     * optimal strategies - they walk it in LZ5HC_Insert / FindMatchFast. The
+     * fast strategy indexes the hash tables directly, so levels 1-3 used to
+     * carry a 16 MB allocation (contentLog 22) that was never touched. */
+    if (ctx->params.strategy == LZ5HC_fast)
     {
-        FREEMEM(ctx->hashTable);
-        ctx->hashTable = NULL;
-        return 0;
+        ctx->chainTable = NULL;
+    }
+    else
+    {
+        ctx->chainTable = (U32*) calloc((size_t)1 << ctx->params.contentLog, sizeof(U32));
+        if (!ctx->chainTable)
+        {
+            FREEMEM(ctx->hashTable);
+            ctx->hashTable = NULL;
+            return 0;
+        }
     }
 
     return 1;
@@ -257,8 +268,11 @@ FORCE_INLINE void LZ5HC_Insert (LZ5HC_Data_Structure* ctx, const BYTE* ip)
     while(idx < target)
     {
         size_t h = LZ5HC_hashPtr(base+idx, ctx->params.hashLog, ctx->params.searchLength);
-        chainTable[idx & contentMask] = (U32)(idx - HashTable[h]);
-//        if (chainTable[idx & contentMask] == 1) chainTable[idx & contentMask] = (U32)0x01010101;
+        /* chainTable is NULL for the fast strategy, which never reads it - the
+         * dict catch-up path still runs LZ5HC_Insert, so the write is guarded
+         * rather than assumed away. */
+        if (chainTable)
+            chainTable[idx & contentMask] = (U32)(idx - HashTable[h]);
         HashTable[h] = idx;
 #if MINMATCH == 3
         if (ctx->params.hashLog3)
@@ -1838,26 +1852,36 @@ static int LZ5HC_compress_fast (
         const BYTE* forwardIp = ip;
         unsigned step = 1;
         unsigned searchMatchNb = (unsigned)(accel << skipTrigger);
-        U32 forwardH = LZ5HC_hashPtr(forwardIp, hBits, sl);
+        U32 forwardH  = LZ5HC_hashPtr(forwardIp, hBits, sl);
+        U32 forwardH3 = h3Bits ? (U32)LZ5HC_hash3Ptr(forwardIp, h3Bits) : 0;
 
         for ( ; ; )
         {
-            U32 h = forwardH;
+            U32 h  = forwardH;
+            U32 h3 = forwardH3;
             U32 current, idx, idx3 = 0;
 
             ip = forwardIp;
             forwardIp += step;
             step = (searchMatchNb++ >> skipTrigger);
             if (forwardIp > mflimit) goto _last_literals;
+            /* hash both tables for the next probe now, and start their loads:
+             * the prefetch is output-neutral, and carrying the 3-byte hash
+             * forward also saves recomputing it on the next iteration. */
             forwardH = LZ5HC_hashPtr(forwardIp, hBits, sl);
             LZ5_PREFETCH(&HashTable[forwardH]);
+            if (h3Bits)
+            {
+                forwardH3 = (U32)LZ5HC_hash3Ptr(forwardIp, h3Bits);
+                LZ5_PREFETCH(&HashTable3[forwardH3]);
+            }
 
             current = (U32)(ip - base);
             idx = HashTable[h];
             HashTable[h] = current;
             if (h3Bits)
             {
-                U32* const h3Pos = &HashTable3[LZ5HC_hash3Ptr(ip, h3Bits)];
+                U32* const h3Pos = &HashTable3[h3];
                 idx3 = *h3Pos;
                 *h3Pos = current;
             }
@@ -1892,6 +1916,11 @@ static int LZ5HC_compress_fast (
             }
         }
 
+        /* Catch up: shrink the literal run in front of the match. Kept as a
+         * byte loop on purpose: a word-at-a-time version was measured on
+         * Silesia at the three levels and lost 2.5-4.6% encode speed - the
+         * backward run is short (mostly 0-2 bytes), so the extra bounds
+         * arithmetic costs more than it saves. */
         {
             int back = 0;
             while ((ip + back > anchor) && (ref + back > lowPrefixPtr) && (ip[back - 1] == ref[back - 1])) back--;
