@@ -1803,7 +1803,9 @@ FORCE_INLINE int LZ5HC_compress_fast_generic (
     char* dest,
     int inputSize,
     int maxOutputSize,
-    limitedOutput_directive limit
+    limitedOutput_directive limit,
+    const int plusC,      /* 1: 3-byte index present, 0: absent, -1: read from params */
+    const U32 slC         /* searchLength as a constant, 0: read from params */
     )
 {
     const BYTE* ip = (const BYTE*) source;
@@ -1823,7 +1825,7 @@ FORCE_INLINE int LZ5HC_compress_fast_generic (
     U32* const HashTable3 = ctx->hashTable3;
     const U32 hBits  = ctx->params.hashLog;
     const U32 h3Bits = ctx->params.hashLog3;
-    const U32 sl     = ctx->params.searchLength;
+    const U32 sl     = slC ? slC : ctx->params.searchLength;
     const int accel = (ctx->params.searchNum>0)?(int)ctx->params.searchNum:1;
     /* lazy-match sufficiency: a match at least this short is worth looking one
      * and two positions ahead for a better one. 0 disables the check, which is
@@ -1832,7 +1834,7 @@ FORCE_INLINE int LZ5HC_compress_fast_generic (
     const U32 skipTrigger = 6;   /* same accelerating-step ramp as the level-0 parser */
     /* the price-aware 3-candidate finder costs more per position; it is only
      * worth it on the levels that carry a 3-byte index */
-    const int usePlus = (h3Bits != 0);
+    const int usePlus = (plusC >= 0) ? plusC : (h3Bits != 0);
 
     /* init */
     ctx->inputBuffer = (const BYTE*)source;
@@ -1955,8 +1957,17 @@ FORCE_INLINE int LZ5HC_compress_fast_generic (
 static int LZ5HC_compress_fast (LZ5HC_Data_Structure* ctx, const char* source, char* dest,
                                 int inputSize, int maxOutputSize, limitedOutput_directive limit)
 {
-    if (limit) return LZ5HC_compress_fast_generic(ctx, source, dest, inputSize, maxOutputSize, limitedOutput);
-    return LZ5HC_compress_fast_generic(ctx, source, dest, inputSize, maxOutputSize, noLimit);
+    const int plus = (ctx->params.hashLog3 != 0);
+    if (ctx->params.searchLength == 6)
+    {
+        if (limit)
+            return plus ? LZ5HC_compress_fast_generic(ctx, source, dest, inputSize, maxOutputSize, limitedOutput, 1, 6)
+                        : LZ5HC_compress_fast_generic(ctx, source, dest, inputSize, maxOutputSize, limitedOutput, 0, 6);
+        return plus ? LZ5HC_compress_fast_generic(ctx, source, dest, inputSize, maxOutputSize, noLimit, 1, 6)
+                    : LZ5HC_compress_fast_generic(ctx, source, dest, inputSize, maxOutputSize, noLimit, 0, 6);
+    }
+    if (limit) return LZ5HC_compress_fast_generic(ctx, source, dest, inputSize, maxOutputSize, limitedOutput, -1, 0);
+    return LZ5HC_compress_fast_generic(ctx, source, dest, inputSize, maxOutputSize, noLimit, -1, 0);
 }
 
 
