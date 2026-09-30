@@ -1797,7 +1797,7 @@ FORCE_INLINE int LZ5HC_FindMatchFast3 (LZ5HC_Data_Structure* ctx, U32 matchIndex
 #  define LZ5_PREFETCH(p)  ((void)(p))
 #endif
 
-static int LZ5HC_compress_fast (
+FORCE_INLINE int LZ5HC_compress_fast_generic (
     LZ5HC_Data_Structure* ctx,
     const char* source,
     char* dest,
@@ -1946,6 +1946,17 @@ static int LZ5HC_compress_fast (
 
     /* End */
     return (int) (((char*)op)-dest);
+}
+
+
+
+/* limit is a compile-time constant inside each copy, so the output-bound checks
+ * in the hot loop and in LZ5HC_encodeSequence fold away when unbounded. */
+static int LZ5HC_compress_fast (LZ5HC_Data_Structure* ctx, const char* source, char* dest,
+                                int inputSize, int maxOutputSize, limitedOutput_directive limit)
+{
+    if (limit) return LZ5HC_compress_fast_generic(ctx, source, dest, inputSize, maxOutputSize, limitedOutput);
+    return LZ5HC_compress_fast_generic(ctx, source, dest, inputSize, maxOutputSize, noLimit);
 }
 
 
