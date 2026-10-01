@@ -1041,19 +1041,24 @@ FORCE_INLINE int LZ5_decompress_generic(
                 break;
         }
 #else
+        if (token >> 7)
         {
-            /* Branch-free offset decode. The four codeword classes are picked by
-             * the top three token bits; one 32-bit load covers the widest offset
-             * (24 bits). At this point the literal-copy check above guarantees at
-             * least 1+LASTLITERALS input bytes remain, so reading 4 bytes at ip is
-             * in bounds. */
-            static const U32 offMask[8] = { 0xFFFFu, 0xFFFFu, 0xFFFFFFu, 0u, 0xFFu, 0xFFu, 0xFFu, 0xFFu };
-            static const BYTE offAdv[8] = { 2, 2, 3, 0, 1, 1, 1, 1 };
-            const unsigned cls = token >> 5;
-            const U32 hi = (((token >> ML_RUN_BITS2) & 3) << 8) & (0u - (cls >> 2));   /* 10-bit class only */
-            offset = (MEM_readLE32(ip) & offMask[cls]) | hi;
-            ip += offAdv[cls];
-            if (cls == 3) offset = last_off;
+            /* 10-bit offset: the most common class on the fast levels and well
+             * predicted, so it keeps a branch - an indexed table load here only
+             * adds latency to the input pointer. */
+            offset = *ip + (((token>>ML_RUN_BITS2)&3)<<8); ip++;
+        }
+        else
+        {
+            /* 16-bit, 24-bit and last-offset: branch-free. One 32-bit load covers
+             * the widest offset, and the number of bytes consumed (2, 3 or 0) is
+             * computed rather than looked up. The literal-copy check above leaves
+             * at least 1+LASTLITERALS input bytes, so reading 4 at ip is in bounds. */
+            const unsigned c2 = (token >> 5) & 3;
+            const unsigned adv = 2u + (c2 == 2) - 2u * (c2 == 3);
+            offset = MEM_readLE32(ip) & ((1u << (8*adv)) - 1u);
+            ip += adv;
+            if (c2 == 3) offset = last_off;
         }
 #endif
 
