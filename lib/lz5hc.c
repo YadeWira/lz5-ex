@@ -978,7 +978,7 @@ FORCE_INLINE int LZ5HC_encodeSequence (
 
     if ((limitedOutputBuffer) && ((*op + (length>>8) + length + (2 + 1 + LASTLITERALS)) > oend)) return 1;   /* Check output limit */
 
-    if (*ip-match >= LZ5_SHORT_OFFSET_DISTANCE && *ip-match < LZ5_MID_OFFSET_DISTANCE && (U32)(*ip-match) != 0)
+    if (*ip-match >= LZ5_SHORT_OFFSET_DISTANCE && *ip-match < LZ5_MID_OFFSET_DISTANCE && (U32)(*ip-match) != ctx->last_off && (U32)(*ip-match) != 0)
     {
         if (length>=(int)RUN_MASK) { int len; *token=(RUN_MASK<<ML_BITS); len = length-RUN_MASK; for(; len > 254 ; len-=255) *(*op)++ = 255;  *(*op)++ = (BYTE)len; }
         else *token = (BYTE)(length<<ML_BITS);
@@ -994,8 +994,9 @@ FORCE_INLINE int LZ5HC_encodeSequence (
     MEM_wildCopy(*op, *anchor, (*op) + length);
     *op += length;
 
-    /* Encode Offset */
-    if ((U32)(*ip-match) == 0)
+    /* Encode Offset. The optimal parser signals "repeat the last offset" as offset 0; the
+     * other parsers pass the real offset, which is the same codeword when it equals the last one. */
+    if ((U32)(*ip-match) == 0 || (U32)(*ip-match) == ctx->last_off)
     {
         *token+=(3<<ML_RUN_BITS2);
     }
@@ -1975,6 +1976,10 @@ static int LZ5HC_compress_fast (LZ5HC_Data_Structure* ctx, const char* source, c
 static int LZ5HC_compress_generic (void* ctxvoid, const char* source, char* dest, int inputSize, int maxOutputSize, limitedOutput_directive limit)
 {
     LZ5HC_Data_Structure* ctx = (LZ5HC_Data_Structure*) ctxvoid;
+
+    /* The decoder starts every block with last_off == 1, so the repeat-offset
+     * codeword may only refer to an offset used earlier in this same block. */
+    ctx->last_off = 1;
 
     switch(ctx->params.strategy)
     {
