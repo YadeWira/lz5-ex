@@ -1040,24 +1040,20 @@ FORCE_INLINE int LZ5_decompress_generic(
                 {    offset = MEM_readLE24(ip); ip+=3; }
                 break;
         }
-#else 
-        if (token>>7)
+#else
         {
-            offset = *ip + (((token>>ML_RUN_BITS2)&3)<<8); ip++;
-        }
-        else 
-        if ((token>>ML_RUN_BITS) == 0)
-        {
-            offset = MEM_readLE16(ip); ip+=2;
-        }
-        else
-        if ((token>>ML_RUN_BITS2) == 2)
-        {
-            offset = MEM_readLE24(ip); ip+=3;
-        }
-        else // (token>>ML_RUN_BITS2) == 3
-        {
-            offset = last_off;
+            /* Branch-free offset decode. The four codeword classes are picked by
+             * the top three token bits; one 32-bit load covers the widest offset
+             * (24 bits). At this point the literal-copy check above guarantees at
+             * least 1+LASTLITERALS input bytes remain, so reading 4 bytes at ip is
+             * in bounds. */
+            static const U32 offMask[8] = { 0xFFFFu, 0xFFFFu, 0xFFFFFFu, 0u, 0xFFu, 0xFFu, 0xFFu, 0xFFu };
+            static const BYTE offAdv[8] = { 2, 2, 3, 0, 1, 1, 1, 1 };
+            const unsigned cls = token >> 5;
+            const U32 hi = (((token >> ML_RUN_BITS2) & 3) << 8) & (0u - (cls >> 2));   /* 10-bit class only */
+            offset = (MEM_readLE32(ip) & offMask[cls]) | hi;
+            ip += offAdv[cls];
+            if (cls == 3) offset = last_off;
         }
 #endif
 
