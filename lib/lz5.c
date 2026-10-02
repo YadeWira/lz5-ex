@@ -1006,26 +1006,44 @@ FORCE_INLINE int LZ5_decompress_generic(
 
         /* copy literals */
         cpy = op+length;
-        if (((endOnInput) && ((cpy>(partialDecoding?oexit:oend-WILDCOPYLENGTH)) || (ip+length>iend-(0+1+LASTLITERALS))) )
+        /* MEM_wildCopy moves 8 bytes at a time, so it reads up to 7 bytes past the
+         * literals (8 when there are none). The end-of-block test used to leave only
+         * 1+LASTLITERALS input bytes after them, so near the end of the input the
+         * wide copy read past it - by up to 2 bytes, on valid streams too (a
+         * literal-free repeat-offset sequence right before the final 6-byte tail).
+         * The test now reserves WILDCOPYLENGTH bytes, which keeps a single compare
+         * on the hot path; inside it, literals that are not the last ones of the
+         * block get an exact copy and decoding carries on. */
+        if (((endOnInput) && ((cpy>(partialDecoding?oexit:oend-WILDCOPYLENGTH)) || (ip+length>iend-WILDCOPYLENGTH)) )
             || ((!endOnInput) && (cpy>oend-WILDCOPYLENGTH)))
         {
-            if (partialDecoding)
+            if (likely((endOnInput) && (cpy <= (partialDecoding?oexit:oend-WILDCOPYLENGTH)) && (ip+length <= iend-(0+1+LASTLITERALS))))
             {
-                if (cpy > oend) goto _output_error;                           /* Error : write attempt beyond end of output buffer */
-                if ((endOnInput) && (ip+length > iend)) goto _output_error;   /* Error : read attempt beyond end of input buffer */
+                while (op < cpy) *op++ = *ip++;   /* close to the input end, but not the last literals */
             }
             else
             {
-                if ((!endOnInput) && (cpy != oend)) goto _output_error;       /* Error : block decoding must stop exactly there */
-                if ((endOnInput) && ((ip+length != iend) || (cpy > oend))) goto _output_error;   /* Error : input must be consumed */
+                if (partialDecoding)
+                {
+                    if (cpy > oend) goto _output_error;                           /* Error : write attempt beyond end of output buffer */
+                    if ((endOnInput) && (ip+length > iend)) goto _output_error;   /* Error : read attempt beyond end of input buffer */
+                }
+                else
+                {
+                    if ((!endOnInput) && (cpy != oend)) goto _output_error;       /* Error : block decoding must stop exactly there */
+                    if ((endOnInput) && ((ip+length != iend) || (cpy > oend))) goto _output_error;   /* Error : input must be consumed */
+                }
+                memcpy(op, ip, length);
+                ip += length;
+                op += length;
+                break;     /* Necessarily EOF, due to parsing restrictions */
             }
-            memcpy(op, ip, length);
-            ip += length;
-            op += length;
-            break;     /* Necessarily EOF, due to parsing restrictions */
         }
-        MEM_wildCopy(op, ip, cpy);
-        ip += length; op = cpy;
+        else
+        {
+            MEM_wildCopy(op, ip, cpy);
+            ip += length; op = cpy;
+        }
 
         /* get offset */
 #if 0
