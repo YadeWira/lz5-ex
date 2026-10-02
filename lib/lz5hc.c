@@ -2076,7 +2076,11 @@ int LZ5_loadDictHC (LZ5_streamHC_t* LZ5_streamHCPtr, const char* dictionary, int
         dictSize = LZ5_DICT_SIZE;
     }
     LZ5HC_init (ctxPtr, (const BYTE*)dictionary);
-    if (dictSize >= 4) LZ5HC_Insert (ctxPtr, (const BYTE*)dictionary +(dictSize-3));
+    {   /* index only positions whose hash input lies inside the dictionary: the
+         * 5- to 7-byte hashes read 8 bytes, see LZ5HC_setExternalDict */
+        const int hashRead = (ctxPtr->params.searchLength > 4) ? 8 : 4;
+        if (dictSize >= hashRead) LZ5HC_Insert (ctxPtr, (const BYTE*)dictionary + (dictSize - hashRead + 1));
+    }
     ctxPtr->end = (const BYTE*)dictionary + dictSize;
     return dictSize;
 }
@@ -2086,8 +2090,13 @@ int LZ5_loadDictHC (LZ5_streamHC_t* LZ5_streamHCPtr, const char* dictionary, int
 
 static void LZ5HC_setExternalDict(LZ5HC_Data_Structure* ctxPtr, const BYTE* newBlock)
 {
-    if (ctxPtr->end >= ctxPtr->base + 4)
-        LZ5HC_Insert (ctxPtr, ctxPtr->end-3);   /* Referencing remaining dictionary content */
+    /* Index the rest of the old block, but only positions whose hash input lies
+     * inside it. The 4-byte hash reads 4 bytes, so the limit inherited from LZ4HC
+     * (end-3) is right for it; the 5- to 7-byte hashes read 8 (MEM_read64), and
+     * with end-3 they read up to 4 bytes past the caller's previous block. */
+    const size_t hashRead = (ctxPtr->params.searchLength > 4) ? 8 : 4;
+    if (ctxPtr->end >= ctxPtr->base + hashRead)
+        LZ5HC_Insert (ctxPtr, ctxPtr->end - hashRead + 1);   /* Referencing remaining dictionary content */
     /* Only one memory segment for extDict, so any previous extDict is lost at this stage */
     ctxPtr->lowLimit  = ctxPtr->dictLimit;
     ctxPtr->dictLimit = (U32)(ctxPtr->end - ctxPtr->base);
