@@ -16,8 +16,11 @@ TESTS    := test_hc_tables
 
 all: $(TESTS)
 
-test_hc_tables: test_hc_tables.c $(LIB_SRC)
-	$(CC) $(CFLAGS) $(CPPFLAGS) $(WFLAGS) $(LDFLAGS) $^ -o $@
+# The library headers are prerequisites too: lz5common.h carries the per-level
+# parameter table, and a header-only change must rebuild the test. Only the .c
+# files go to the compiler.
+test_hc_tables: test_hc_tables.c $(LIB_SRC) $(wildcard $(LZ5DIR)/*.h)
+	$(CC) $(CFLAGS) $(CPPFLAGS) $(WFLAGS) $(LDFLAGS) $(filter %.c,$^) -o $@
 
 # Runs the tests twice with a poisoned heap, which is the condition that
 # exposes uninitialised tables. MALLOC_PERTURB_ makes glibc fill freshly

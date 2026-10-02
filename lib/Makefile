@@ -76,7 +76,7 @@ liblz5: lz5.c lz5hc.c lz5frame.c xxhash.c   # need to compile once with -fPIC, a
 	@ln -sf $@.$(SHARED_EXT_VER) $@.$(SHARED_EXT)
 
 clean:
-	@rm -f core *.o *.a *.$(SHARED_EXT) *.$(SHARED_EXT).* liblz5.pc
+	@rm -f core *.o *.d *.a *.$(SHARED_EXT) *.$(SHARED_EXT).* liblz5.pc
 	@echo Cleaning library completed
 
 

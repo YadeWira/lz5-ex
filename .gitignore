@@ -19,6 +19,7 @@ lz5-*.sha256
 
 # Object files
 *.o
+*.d
 *.ko
 
 # Libraries

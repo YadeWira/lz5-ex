@@ -93,11 +93,16 @@ datagen : datagen.o datagencli.c
 	$(CC) $(FLAGS) $^ -o $@$(EXT)
 
 .c.o:
-	$(CC) $(FLAGS) $< -c -o $@
+	$(CC) $(FLAGS) -MMD -MP $< -c -o $@
+
+# Header dependencies, written by -MMD next to each object. Without them a change
+# to a header (lz5common.h holds the per-level parameter table, for one) did not
+# rebuild the objects that include it, and the binary silently kept the old code.
+-include $(wildcard *.d $(LZ5DIR)/*.d)
 
 clean:
 	@$(MAKE) -C $(LZ5DIR) $@
-	@rm -f core *.o *.test tmp* \
+	@rm -f core *.o *.d *.test tmp* \
         lz5$(EXT) lz5_32$(EXT) \
         fullbench$(EXT) fullbench32$(EXT) \
         frametest$(EXT) frametest32$(EXT) \
