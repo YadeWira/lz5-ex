@@ -220,7 +220,9 @@ FORCE_INLINE void LZ5HC_BinTree_InsertFull(LZ5HC_Data_Structure* ctx, const BYTE
                 }
             }
             
-            if (*(ip+mlt) < *(match+mlt))
+            /* the byte after the match: once a dictionary match has run into the prefix, it
+             * is read from base, not dictBase (that read went past the dictionary) */
+            if (*(ip+mlt) < *(((matchIndex + mlt >= dictLimit) ? base + matchIndex : match) + mlt))
             {
                 *ptr0 = delta0;
                 ptr0 = &chainTable[(matchIndex*2) & contentMask];
@@ -285,6 +287,20 @@ FORCE_INLINE void LZ5HC_Insert (LZ5HC_Data_Structure* ctx, const BYTE* ip)
 }
 
     
+/* The repeat-offset candidate (ip - rep) is only usable inside the current
+ * prefix: the contiguous input being compressed and whatever precedes it in the
+ * same buffer. With an external dictionary (LZ5_loadDictHC, or a non-contiguous
+ * LZ5_compress_HC_continue block) the dictionary lives elsewhere in memory, so
+ * the bytes physically before the prefix are not the ones the decoder will
+ * reference. Comparing against them read foreign memory and could emit a match
+ * that decodes to other bytes. A repeat offset into the dictionary is skipped
+ * instead; the regular match finders still reach it through dictBase. */
+FORCE_INLINE int LZ5HC_repInPrefix(const LZ5HC_Data_Structure* ctx, const BYTE* ip, size_t rep)
+{
+    return (size_t)(ip - (ctx->base + ctx->dictLimit)) >= rep;
+}
+
+
 FORCE_INLINE int LZ5HC_FindBestMatch (LZ5HC_Data_Structure* ctx,   /* Index table will be updated */
                                                const BYTE* ip, const BYTE* const iLimit,
                                                const BYTE** matchpos)
@@ -306,7 +322,7 @@ FORCE_INLINE int LZ5HC_FindBestMatch (LZ5HC_Data_Structure* ctx,   /* Index tabl
     matchIndex = HashTable[LZ5HC_hashPtr(ip, ctx->params.hashLog, ctx->params.searchLength)];
 
     match = ip - ctx->last_off;
-    if (MEM_read24(match) == MEM_read24(ip))
+    if (LZ5HC_repInPrefix(ctx, ip, ctx->last_off) && MEM_read24(match) == MEM_read24(ip))
     {
         ml = MEM_count(ip+MINMATCH, match+MINMATCH, iLimit) + MINMATCH;
         *matchpos = match;
@@ -323,7 +339,7 @@ FORCE_INLINE int LZ5HC_FindBestMatch (LZ5HC_Data_Structure* ctx,   /* Index tabl
 			if (offset < LZ5_SHORT_OFFSET_DISTANCE)
 			{
 				match = ip - offset;
-				if (match > base && MEM_read24(ip) == MEM_read24(match))
+				if (match >= base + ctx->dictLimit && MEM_read24(ip) == MEM_read24(match))   /* inside the prefix, see LZ5HC_repInPrefix */
 				{
 					ml = 3;//MEM_count(ip+MINMATCH, match+MINMATCH, iLimit) + MINMATCH;
 					*matchpos = match;
@@ -382,7 +398,7 @@ FORCE_INLINE int LZ5HC_FindMatchFast (LZ5HC_Data_Structure* ctx, U32 matchIndex,
     size_t ml=0, mlt;
 
     match = ip - ctx->last_off;
-    if (MEM_read24(match) == MEM_read24(ip))
+    if (LZ5HC_repInPrefix(ctx, ip, ctx->last_off) && MEM_read24(match) == MEM_read24(ip))
     {
         ml = MEM_count(ip+MINMATCH, match+MINMATCH, iLimit) + MINMATCH;
         *matchpos = match;
@@ -396,7 +412,7 @@ FORCE_INLINE int LZ5HC_FindMatchFast (LZ5HC_Data_Structure* ctx, U32 matchIndex,
 		if (offset < LZ5_SHORT_OFFSET_DISTANCE)
 		{
 			match = ip - offset;
-			if (match > base && MEM_read24(ip) == MEM_read24(match))
+			if (match >= base + ctx->dictLimit && MEM_read24(ip) == MEM_read24(match))   /* inside the prefix, see LZ5HC_repInPrefix */
 			{
 				ml = 3;//MEM_count(ip+MINMATCH, match+MINMATCH, iLimit) + MINMATCH;
 				*matchpos = match;
@@ -453,7 +469,7 @@ FORCE_INLINE int LZ5HC_FindMatchFaster (LZ5HC_Data_Structure* ctx, U32 matchInde
     size_t ml=0, mlt;
 
     match = ip - ctx->last_off;
-    if (MEM_read24(match) == MEM_read24(ip))
+    if (LZ5HC_repInPrefix(ctx, ip, ctx->last_off) && MEM_read24(match) == MEM_read24(ip))
     {
         ml = MEM_count(ip+MINMATCH, match+MINMATCH, iLimit) + MINMATCH;
         *matchpos = match;
@@ -561,7 +577,7 @@ FORCE_INLINE size_t LZ5HC_GetWiderMatch (
     matchIndex = HashTable[LZ5HC_hashPtr(ip, ctx->params.hashLog, ctx->params.searchLength)];
 
     match = ip - ctx->last_off;
-    if (MEM_read24(match) == MEM_read24(ip))
+    if (LZ5HC_repInPrefix(ctx, ip, ctx->last_off) && MEM_read24(match) == MEM_read24(ip))
     {
         size_t mlt = MEM_count(ip+MINMATCH, match+MINMATCH, iHighLimit) + MINMATCH;
         
@@ -587,7 +603,7 @@ FORCE_INLINE size_t LZ5HC_GetWiderMatch (
 			if (offset < LZ5_SHORT_OFFSET_DISTANCE)
 			{
 				match = ip - offset;
-				if (match > base && MEM_read24(ip) == MEM_read24(match))
+				if (match >= base + ctx->dictLimit && MEM_read24(ip) == MEM_read24(match))   /* inside the prefix, see LZ5HC_repInPrefix */
 				{
 					size_t mlt = MEM_count(ip + MINMATCH, match + MINMATCH, iHighLimit) + MINMATCH;
 
@@ -700,7 +716,7 @@ FORCE_INLINE int LZ5HC_GetAllMatches (
 		if (offset < LZ5_SHORT_OFFSET_DISTANCE)
 		{
 			match = ip - offset;
-			if (match > base && MEM_read24(ip) == MEM_read24(match))
+			if (match >= base + ctx->dictLimit && MEM_read24(ip) == MEM_read24(match))   /* inside the prefix, see LZ5HC_repInPrefix */
 			{
 				size_t mlt = MEM_count(ip + MINMATCH, match + MINMATCH, iHighLimit) + MINMATCH;
 
@@ -788,7 +804,7 @@ FORCE_INLINE int LZ5HC_GetAllMatches (
                 if (mlt > best_mlen)
                 {
                     best_mlen = mlt;
-                    matches[mnum].off = (int)(ip - match);
+                    matches[mnum].off = (int)(current - matchIndex);   /* match is in dictBase: use the virtual distance */
                     matches[mnum].len = (int)mlt;
                     matches[mnum].back = -back;
                     mnum++;
@@ -846,7 +862,7 @@ FORCE_INLINE int LZ5HC_BinTree_GetAllMatches (
 		if (offset < LZ5_SHORT_OFFSET_DISTANCE)
 		{
 			match = ip - offset;
-			if (match > base && MEM_read24(ip) == MEM_read24(match))
+			if (match >= base + ctx->dictLimit && MEM_read24(ip) == MEM_read24(match))   /* inside the prefix, see LZ5HC_repInPrefix */
 			{
 				mlt = MEM_count(ip + MINMATCH, match + MINMATCH, iHighLimit) + MINMATCH;
 
@@ -908,7 +924,7 @@ FORCE_INLINE int LZ5HC_BinTree_GetAllMatches (
                 if (mlt > best_mlen)
                 {
                     best_mlen = mlt;
-                    matches[mnum].off = (int)(ip - match);
+                    matches[mnum].off = (int)(current - matchIndex);   /* match is in dictBase: use the virtual distance */
                     matches[mnum].len = (int)mlt;
                     matches[mnum].back = 0;
                     mnum++;
@@ -918,7 +934,9 @@ FORCE_INLINE int LZ5HC_BinTree_GetAllMatches (
             }
         }
         
-        if (*(ip+mlt) < *(match+mlt))
+        /* the byte after the match: once a dictionary match has run into the prefix, it
+         * is read from base, not dictBase (that read went past the dictionary) */
+        if (*(ip+mlt) < *(((matchIndex + mlt >= dictLimit) ? base + matchIndex : match) + mlt))
         {
             *ptr0 = delta0;
             ptr0 = &chainTable[(matchIndex*2) & contentMask];
@@ -1087,7 +1105,7 @@ static int LZ5HC_compress_optimal_price (
         llen = ip - anchor;
 
         // check rep
-        mlen = MEM_count(ip, ip - ctx->last_off, matchlimit);
+        mlen = LZ5HC_repInPrefix(ctx, ip, ctx->last_off) ? MEM_count(ip, ip - ctx->last_off, matchlimit) : 0;
         if (mlen >= MINMATCH)
         {
             LZ5_LOG_PARSER("%d: start try REP rep=%d mlen=%d\n", (int)(ip-source), ctx->last_off, mlen);
@@ -1224,7 +1242,7 @@ static int LZ5HC_compress_optimal_price (
 
            // check rep
            // best_mlen = 0;
-           mlen = MEM_count(inr, inr - opt[cur].rep, matchlimit);
+           mlen = LZ5HC_repInPrefix(ctx, inr, (size_t)opt[cur].rep) ? MEM_count(inr, inr - opt[cur].rep, matchlimit) : 0;
            if (mlen >= MINMATCH && mlen > best_mlen)
            {
               LZ5_LOG_PARSER("%d: try REP rep=%d mlen=%d\n", (int)(inr-source), opt[cur].rep, mlen);   
