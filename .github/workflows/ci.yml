@@ -50,23 +50,28 @@ jobs:
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y valgrind
 
+      # matrix.makeflags carries each job's flags (-Werror, -Wconversion, the
+      # sanitizers); every make below passes it, or those jobs build like the default.
       - name: Build
-        run: make clean && make CC=${{ matrix.cc }}
+        run: make clean && make CC=${{ matrix.cc }} ${{ matrix.makeflags }}
 
       - name: Round-trip smoke test
         run: |
           cd programs
-          make lz5 datagen CC=${{ matrix.cc }}
+          make lz5 datagen CC=${{ matrix.cc }} ${{ matrix.makeflags }}
           ./datagen -g4M | ./lz5 -9 | ./lz5 -t
           ./datagen -g1M -P99 | ./lz5 -12 | ./lz5 -t
 
       - name: Test suite (excluding the 6 GB cases)
         run: |
           cd programs
-          make lz5 datagen fullbench frametest CC=${{ matrix.cc }}
-          make test-lz5-multiple test-lz5-contentSize test-lz5-frame-concatenation test-lz5-sparse CC=${{ matrix.cc }}
+          make lz5 datagen fullbench frametest CC=${{ matrix.cc }} ${{ matrix.makeflags }}
+          make test-lz5-multiple test-lz5-contentSize test-lz5-frame-concatenation test-lz5-sparse CC=${{ matrix.cc }} ${{ matrix.makeflags }}
           ./fullbench --no-prompt -i1 ../lib/lz5.c
           ./frametest -i64
+
+      - name: Regression tests (HC tables, linked-block streaming, decoder fuzz)
+        run: make -C tests test CC=${{ matrix.cc }} ${{ matrix.makeflags }}
 
   valgrind:
     name: valgrind
