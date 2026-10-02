@@ -821,7 +821,10 @@ static void LZ5_renormDictT(LZ5_stream_t_internal* LZ5_dict, const BYTE* src)
 int LZ5_compress_fast_continue (LZ5_stream_t* LZ5_stream, const char* source, char* dest, int inputSize, int maxOutputSize, int acceleration)
 {
     LZ5_stream_t_internal* streamPtr = (LZ5_stream_t_internal*)LZ5_stream;
-    const BYTE* const dictEnd = streamPtr->dictionary + streamPtr->dictSize;
+    /* dictionary is NULL before the first block, and NULL + 0 is undefined
+     * behaviour (UBSan reports it). Every use below compares the same way
+     * against NULL as it did against NULL + 0. */
+    const BYTE* const dictEnd = (streamPtr->dictionary == NULL) ? NULL : streamPtr->dictionary + streamPtr->dictSize;
 
     const BYTE* smallest = (const BYTE*) source;
     if (inputSize < 0) return 0;
@@ -876,7 +879,7 @@ int LZ5_compress_forceExtDict (LZ5_stream_t* LZ5_dict, const char* source, char*
 {
     LZ5_stream_t_internal* streamPtr = (LZ5_stream_t_internal*)LZ5_dict;
     int result;
-    const BYTE* const dictEnd = streamPtr->dictionary + streamPtr->dictSize;
+    const BYTE* const dictEnd = (streamPtr->dictionary == NULL) ? NULL : streamPtr->dictionary + streamPtr->dictSize;   /* NULL + 0 is UB */
 
     const BYTE* smallest = dictEnd;
     if (smallest > (const BYTE*) source) smallest = (const BYTE*) source;
@@ -895,9 +898,10 @@ int LZ5_compress_forceExtDict (LZ5_stream_t* LZ5_dict, const char* source, char*
 int LZ5_saveDict (LZ5_stream_t* LZ5_dict, char* safeBuffer, int dictSize)
 {
     LZ5_stream_t_internal* dict = (LZ5_stream_t_internal*) LZ5_dict;
-	const BYTE* previousDictEnd = dict->dictionary + dict->dictSize;
-	if (!dict->dictionary)
+    const BYTE* previousDictEnd;
+    if (!dict->dictionary)
         return 0;
+    previousDictEnd = dict->dictionary + dict->dictSize;   /* only once it is known not to be NULL */
 
     if ((U32)dictSize > LZ5_DICT_SIZE) dictSize = LZ5_DICT_SIZE;   /* useless to define a dictionary > LZ5_DICT_SIZE */
     if ((U32)dictSize > dict->dictSize) dictSize = dict->dictSize;
@@ -1235,7 +1239,8 @@ int LZ5_setStreamDecode (LZ5_streamDecode_t* LZ5_streamDecode, const char* dicti
 {
     LZ5_streamDecode_t_internal* lz5sd = (LZ5_streamDecode_t_internal*) LZ5_streamDecode;
     lz5sd->prefixSize = (size_t) dictSize;
-    lz5sd->prefixEnd = (const BYTE*) dictionary + dictSize;
+    /* (NULL, 0) is the usual way to reset a decoder, and NULL + 0 is UB */
+    lz5sd->prefixEnd = (dictionary == NULL) ? NULL : (const BYTE*) dictionary + dictSize;
     lz5sd->externalDict = NULL;
     lz5sd->extDictSize  = 0;
     return 1;
@@ -1268,7 +1273,9 @@ int LZ5_decompress_safe_continue (LZ5_streamDecode_t* LZ5_streamDecode, const ch
     else
     {
         lz5sd->extDictSize = lz5sd->prefixSize;
-        lz5sd->externalDict = lz5sd->prefixEnd - lz5sd->extDictSize;
+        /* prefixEnd is NULL on the first block of a fresh decoder (size 0), and
+         * NULL - 0 is UB; the decoder accepts a NULL dictionary of size 0 */
+        lz5sd->externalDict = (lz5sd->prefixEnd == NULL) ? NULL : lz5sd->prefixEnd - lz5sd->extDictSize;
         result = LZ5_decompress_generic(source, dest, compressedSize, maxOutputSize,
                                         endOnInputSize, full, 0,
                                         usingExtDict, (BYTE*)dest, lz5sd->externalDict, lz5sd->extDictSize);
