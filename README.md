@@ -59,8 +59,8 @@ Linux, GCC 14.2.0. Sorted by compression ratio, best first.
 | zlib 1.3.2 -9          |     11.0 MB/s |    334.8 MB/s |    67643273 |  31.92 |
 | lz5-ex 1.5.1 -13       |      6.0 MB/s |    945.4 MB/s |    68066924 |  32.12 |
 | lz5-ex 1.5.1 -12       |     10.5 MB/s |    884.7 MB/s |    69498052 |  32.79 |
+| lz5-ex 1.5.1 -11       |     11.9 MB/s |    836.3 MB/s |    70334578 |  33.19 |
 | lz5-ex 1.5.1 -10       |     18.2 MB/s |    967.4 MB/s |    70898501 |  33.45 |
-| lz5-ex 1.5.1 -11       |     13.9 MB/s |    895.4 MB/s |    71067136 |  33.53 |
 | lz5-ex 1.5.1 -9        |     24.5 MB/s |    943.7 MB/s |    72730525 |  34.32 |
 | zstd 1.5.7 -1          |    341.3 MB/s |   1177.7 MB/s |    73229468 |  34.55 |
 | lz5-ex 1.5.1 -8        |     40.7 MB/s |    922.2 MB/s |    76188482 |  35.95 |
@@ -84,8 +84,7 @@ and will differ on other hardware.
 levels are not one smooth curve: `-1` to `-3` are the "fast" HC profiles, which
 trade ratio for speed and sit above `-0` on the speed axis, which is why `-0`
 compresses better than any of them. From `-4` upwards the ratio improves
-with the level, with one exception: `-11` is slightly larger than `-10` and also
-slower, so `-10` is the better choice of the two.
+monotonically with the level.
 
 Levels `-1` to `-3` were reworked in lz5-ex. The 1.5.x strategy checked a
 single candidate from an 8K-entry hash table and never indexed the positions
@@ -123,6 +122,60 @@ table: a level with `sufficientLength` set looks one and two positions ahead
 for a clearly longer match. Measured on Silesia it buys ~1.2 points of ratio
 on `-2` for ~19% encode speed, which is why it is left disabled; it is a knob
 to be re-measured on the target content.
+
+### Comparison with LZ5 1.5.0
+
+The same Silesia corpus, the same lzbench and the same core, with LZ5 1.5.0 (the
+upstream `v1.5` tag, unmodified) built into the harness next to lz5-ex. The runs
+were interleaved - 1.5.0, lz5-ex, 1.5.0, ... - three rounds each, so machine drift
+hits both alike. Sizes are exact and identical across rounds; speeds are the
+median of the three rounds, in MB/s, as total bytes over total time.
+
+| Level | Ratio 1.5.0 | Ratio lz5-ex | Size | Encode 1.5.0 | Encode lz5-ex | | Decode 1.5.0 | Decode lz5-ex | |
+| ----- | ----------- | ------------ | ---- | ------------ | ------------- | --- | ------------ | ------------- | --- |
+| `-0` | 41.62 | 41.62 | +0.0% |  204.4 |  212.0 | +4% |   608.7 |   867.3 | +42% |
+| `-1` | 53.57 | 51.34 | -4.2% |  478.9 |  438.8 | -8% |  1422.3 |  1417.1 | -0% |
+| `-2` | 49.11 | 45.26 | -7.8% |  387.1 |  271.5 | -30% |  1270.9 |  1097.0 | -14% |
+| `-3` | 45.10 | 42.61 | -5.5% |  292.5 |  175.6 | -40% |  1122.6 |   847.8 | -24% |
+| `-4` | 40.82 | 39.80 | -2.5% |  159.4 |  152.7 | -4% |   888.3 |   912.2 | +3% |
+| `-5` | 39.85 | 38.96 | -2.2% |  113.7 |  113.5 | -0% |   717.4 |   874.9 | +22% |
+| `-6` | 38.02 | 37.05 | -2.5% |   40.6 |   42.7 | +5% |   880.9 |   902.3 | +2% |
+| `-7` | 37.21 | 36.30 | -2.4% |   37.3 |   37.3 | -0% |   826.0 |   881.5 | +7% |
+| `-8` | 36.80 | 35.95 | -2.3% |   33.7 |   35.4 | +5% |   760.8 |   864.8 | +14% |
+| `-9` | 35.03 | 34.32 | -2.0% |   21.9 |   23.0 | +5% |   733.7 |   892.4 | +22% |
+| `-10` | 34.10 | 33.45 | -1.9% |   16.5 |   17.9 | +9% |   711.0 |   915.6 | +29% |
+| `-11` | 33.53 | 33.19 | -1.0% |   12.5 |   11.9 | -4% |   699.9 |   836.3 | +19% |
+| `-12` | 32.79 | 32.79 | +0.0% |    9.4 |   10.1 | +7% |   699.8 |   839.4 | +20% |
+| `-13` | 32.12 | 32.12 | +0.0% |    5.3 |    5.6 | +5% |   670.6 |   895.3 | +34% |
+| `-14` | 31.11 | 31.11 | +0.0% |    3.7 |    3.9 | +7% |   639.3 |   959.5 | +50% |
+| `-15` | 30.95 | 30.95 | +0.0% |    1.8 |    1.8 | +2% |   628.3 |   939.3 | +50% |
+
+`Ratio` is the compressed size as a percentage of the original, so lower is better;
+`Size` is how much smaller (negative) lz5-ex's output is. The unlabelled columns are
+the change in speed, positive meaning lz5-ex is faster. Differences of a few percent
+are within the run-to-run noise of this machine. The raw numbers are in
+`bench/compare-lz5-1.5.0.csv`.
+
+How the levels group:
+
+- **`-0`, `-12` to `-15`: the output is byte for byte what 1.5.0 writes** (checked
+  on all twelve files). Only the decoder changed, and it decodes 20% to 50% faster.
+  Encoding is within a few percent of 1.5.0.
+- **`-4` to `-10`: 1.9% to 2.5% smaller**, with encoding between 4% slower and 9%
+  faster than 1.5.0 and decoding 2% to 29% faster. This is the repeat-offset change
+  described above.
+- **`-11`: 1.0% smaller**, about 4% slower to encode, 19% faster to decode. It was
+  retuned (`sufficientLength` 12 -> 32, `searchNum` 8 -> 6): with the old values it
+  was larger than `-10` on the full corpus.
+- **`-1` to `-3` trade speed for ratio.** They are 4.2%, 7.8% and 5.5% smaller, and
+  they pay for it: `-1` encodes 8% slower and decodes the same, `-2` encodes 30%
+  slower and decodes 14% slower, `-3` encodes 40% slower and decodes 25% slower.
+  More matches per byte means more codewords to decode. If speed matters more than
+  ratio at these levels, `-0` is the fast path, and it is unchanged.
+
+The compressed streams stay decodable by LZ5 1.5.0 and the other way round at every
+level (`tests/test_compat_lz5_15.sh`), so the sizes above are the only thing that
+differs for a user who swaps the library.
 
 Reproduce with `bench/run-silesia.sh`. The raw lzbench output is kept in
 `bench/silesia.csv` and the per-codec aggregation in
