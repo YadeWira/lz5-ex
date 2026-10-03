@@ -429,7 +429,7 @@ int LZ5_compress_fast_extState(void* state, const char* source, char* dest, int 
     if (inputSize < 0) return 0;
     if (maxOutputSize < 0) return 0;
 
-    if (maxOutputSize >= LZ5_compressBound(inputSize))
+    if ((size_t)maxOutputSize >= LZ5_WORST_OUTPUT(inputSize))   /* not LZ5_compressBound: see LZ5_WORST_OUTPUT */
     {
         if (inputSize < LZ5_64Klimit)
             return LZ5_compress_generic(state, source, dest, inputSize, 0, notLimited, byU16,                        noDict, noDictIssue, acceleration);
@@ -438,10 +438,16 @@ int LZ5_compress_fast_extState(void* state, const char* source, char* dest, int 
     }
     else
     {
+        int result;
         if (inputSize < LZ5_64Klimit)
-            return LZ5_compress_generic(state, source, dest, inputSize, maxOutputSize, limitedOutput, byU16,                        noDict, noDictIssue, acceleration);
+            result = LZ5_compress_generic(state, source, dest, inputSize, maxOutputSize, limitedOutput, byU16,                        noDict, noDictIssue, acceleration);
         else
-            return LZ5_compress_generic(state, source, dest, inputSize, maxOutputSize, limitedOutput, MEM_64bits() ? byU32 : byPtr, noDict, noDictIssue, acceleration);
+            result = LZ5_compress_generic(state, source, dest, inputSize, maxOutputSize, limitedOutput, MEM_64bits() ? byU32 : byPtr, noDict, noDictIssue, acceleration);
+        /* did not fit, but the caller gave LZ5_compressBound(): store the block
+         * as literals, which always fits that (see LZ5_encodeLiteralBlock) */
+        if (result == 0 && inputSize > 0 && maxOutputSize >= LZ5_compressBound(inputSize))
+            result = LZ5_encodeLiteralBlock(source, inputSize, dest, maxOutputSize);
+        return result;
     }
 }
 
@@ -705,7 +711,7 @@ static int LZ5_compress_destSize_extState (void* state, const char* src, char* d
     if ((*srcSizePtr) < 0) return 0;
     if (targetDstSize < 0) return 0;
 
-    if (targetDstSize >= LZ5_compressBound(*srcSizePtr))   /* compression success is guaranteed */
+    if ((size_t)targetDstSize >= LZ5_WORST_OUTPUT(*srcSizePtr))   /* compression success is guaranteed */
     {
         return LZ5_compress_fast_extState(state, src, dst, *srcSizePtr, targetDstSize, 1);
     }
@@ -854,6 +860,8 @@ int LZ5_compress_fast_continue (LZ5_stream_t* LZ5_stream, const char* source, ch
             result = LZ5_compress_generic(LZ5_stream, source, dest, inputSize, maxOutputSize, limitedOutput, byU32, withPrefix64k, dictSmall, acceleration);
         else
             result = LZ5_compress_generic(LZ5_stream, source, dest, inputSize, maxOutputSize, limitedOutput, byU32, withPrefix64k, noDictIssue, acceleration);
+        if (result == 0 && inputSize > 0 && maxOutputSize >= LZ5_compressBound(inputSize))   /* see LZ5_encodeLiteralBlock */
+            result = LZ5_encodeLiteralBlock(source, inputSize, dest, maxOutputSize);
         streamPtr->dictSize += (U32)inputSize;
         streamPtr->currentOffset += (U32)inputSize;
         return result;
@@ -866,6 +874,8 @@ int LZ5_compress_fast_continue (LZ5_stream_t* LZ5_stream, const char* source, ch
             result = LZ5_compress_generic(LZ5_stream, source, dest, inputSize, maxOutputSize, limitedOutput, byU32, usingExtDict, dictSmall, acceleration);
         else
             result = LZ5_compress_generic(LZ5_stream, source, dest, inputSize, maxOutputSize, limitedOutput, byU32, usingExtDict, noDictIssue, acceleration);
+        if (result == 0 && inputSize > 0 && maxOutputSize >= LZ5_compressBound(inputSize))   /* see LZ5_encodeLiteralBlock */
+            result = LZ5_encodeLiteralBlock(source, inputSize, dest, maxOutputSize);
         streamPtr->dictionary = (const BYTE*)source;
         streamPtr->dictSize = (U32)inputSize;
         streamPtr->currentOffset += (U32)inputSize;

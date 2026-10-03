@@ -80,8 +80,10 @@ int LZ5_decompress_safe (const char* source, char* dest, int compressedSize, int
 LZ5_compress_default() :
     Compresses 'sourceSize' bytes from buffer 'source'
     into already allocated 'dest' buffer of size 'maxDestSize'.
-    Compression is guaranteed to succeed if 'maxDestSize' >= LZ5_compressBound(sourceSize).
-    It also runs faster, so it's a recommended setting.
+    Compression is guaranteed to succeed if 'maxDestSize' >= LZ5_compressBound(sourceSize):
+    a block the parser cannot fit within that is stored as literals instead, which always fits.
+    The output checks are skipped, which is slightly faster, only from about 4/3 of the
+    source size upwards (some LZ5 codewords take more bytes than the data they encode).
     If the function cannot compress 'source' into a more limited 'dest' budget,
     compression stops *immediately*, and the function result is zero.
     As a consequence, 'dest' content is not valid.
@@ -113,7 +115,7 @@ LZ5_compressBound() :
     Provides the maximum size that LZ5 compression may output in a "worst case" scenario (input data not compressible)
     This function is primarily useful for memory allocation purposes (destination buffer size).
     Macro LZ5_COMPRESSBOUND() is also provided for compilation-time evaluation (stack memory allocation for example).
-    Note that LZ5_compress_default() compress faster when dest buffer size is >= LZ5_compressBound(srcSize)
+    With a dest buffer of at least this size, compression always succeeds (see LZ5_compress_default()).
         inputSize  : max supported value is LZ5_MAX_INPUT_SIZE
         return : maximum output size in a "worst case" scenario
               or 0, if input size is too large ( > LZ5_MAX_INPUT_SIZE)
@@ -227,7 +229,7 @@ int LZ5_loadDict (LZ5_stream_t* streamPtr, const char* dictionary, int dictSize)
  * Compress buffer content 'src', using data from previously compressed blocks as dictionary to improve compression ratio.
  * Important : Previous data blocks are assumed to still be present and unmodified !
  * 'dst' buffer must be already allocated.
- * If maxDstSize >= LZ5_compressBound(srcSize), compression is guaranteed to succeed, and runs faster.
+ * If maxDstSize >= LZ5_compressBound(srcSize), compression is guaranteed to succeed.
  * If not, and if compressed data cannot fit into 'dst' buffer size, compression stops, and function returns a zero.
  */
 int LZ5_compress_fast_continue (LZ5_stream_t* streamPtr, const char* src, char* dst, int srcSize, int maxDstSize, int acceleration);

@@ -994,7 +994,9 @@ FORCE_INLINE int LZ5HC_encodeSequence (
     length = (int)(*ip - *anchor);
     token = (*op)++;
 
-    if ((limitedOutputBuffer) && ((*op + (length>>8) + length + (2 + 1 + LASTLITERALS)) > oend)) return 1;   /* Check output limit */
+    /* run-length bytes come one per 255, so length/255 - length>>8 undercounts a
+     * long run by up to length/65280 bytes, more than the margin for 16 MB runs */
+    if ((limitedOutputBuffer) && ((*op + (length/255) + length + (2 + 1 + LASTLITERALS)) > oend)) return 1;   /* Check output limit */
 
     if (*ip-match >= LZ5_SHORT_OFFSET_DISTANCE && *ip-match < LZ5_MID_OFFSET_DISTANCE && (U32)(*ip-match) != ctx->last_off && (U32)(*ip-match) != 0)
     {
@@ -1040,7 +1042,7 @@ FORCE_INLINE int LZ5HC_encodeSequence (
 
     /* Encode MatchLength */
     length = (int)(matchLength-MINMATCH);
-    if ((limitedOutputBuffer) && (*op + (length>>8) + (1 + LASTLITERALS) > oend)) return 1;   /* Check output limit */
+    if ((limitedOutputBuffer) && (*op + (length/255) + (1 + LASTLITERALS) > oend)) return 1;   /* Check output limit */
     if (length>=(int)ML_MASK) { *token+=ML_MASK; length-=ML_MASK; for(; length > 509 ; length-=510) { *(*op)++ = 255; *(*op)++ = 255; } if (length > 254) { length-=255; *(*op)++ = 255; } *(*op)++ = (BYTE)length; }
     else *token += (BYTE)(length);
 
@@ -1999,18 +2001,28 @@ static int LZ5HC_compress_generic (void* ctxvoid, const char* source, char* dest
      * codeword may only refer to an offset used earlier in this same block. */
     ctx->last_off = 1;
 
-    switch(ctx->params.strategy)
     {
-    default:
-    case LZ5HC_fast:
-        return LZ5HC_compress_fast(ctx, source, dest, inputSize, maxOutputSize, limit);
-    case LZ5HC_price_fast:
-        return LZ5HC_compress_price_fast(ctx, source, dest, inputSize, maxOutputSize, limit);
-    case LZ5HC_lowest_price:
-        return LZ5HC_compress_lowest_price(ctx, source, dest, inputSize, maxOutputSize, limit);
-    case LZ5HC_optimal_price:
-    case LZ5HC_optimal_price_bt:
-        return LZ5HC_compress_optimal_price(ctx, (const BYTE* )source, dest, inputSize, maxOutputSize, limit);
+        int result;
+        switch(ctx->params.strategy)
+        {
+        default:
+        case LZ5HC_fast:
+            result = LZ5HC_compress_fast(ctx, source, dest, inputSize, maxOutputSize, limit); break;
+        case LZ5HC_price_fast:
+            result = LZ5HC_compress_price_fast(ctx, source, dest, inputSize, maxOutputSize, limit); break;
+        case LZ5HC_lowest_price:
+            result = LZ5HC_compress_lowest_price(ctx, source, dest, inputSize, maxOutputSize, limit); break;
+        case LZ5HC_optimal_price:
+        case LZ5HC_optimal_price_bt:
+            result = LZ5HC_compress_optimal_price(ctx, (const BYTE* )source, dest, inputSize, maxOutputSize, limit); break;
+        }
+        /* The parser's output did not fit: when the caller gave at least
+         * LZ5_compressBound(), store the block as literals instead (see
+         * LZ5_encodeLiteralBlock). The window state is unaffected - the block
+         * is still the input, and the decoder still sees all of it. */
+        if (result == 0 && inputSize > 0 && maxOutputSize >= LZ5_compressBound(inputSize))
+            result = LZ5_encodeLiteralBlock(source, inputSize, dest, maxOutputSize);
+        return result;
     }
 }
 
@@ -2023,7 +2035,7 @@ int LZ5_compress_HC_extStateHC (void* state, const char* src, char* dst, int src
     if (srcSize < 0) return 0;
     if (maxDstSize < 0) return 0;
     LZ5HC_init ((LZ5HC_Data_Structure*)state, (const BYTE*)src);
-    if (maxDstSize < LZ5_compressBound(srcSize))
+    if ((size_t)maxDstSize < LZ5_WORST_OUTPUT(srcSize))   /* not LZ5_compressBound: see LZ5_WORST_OUTPUT */
         return LZ5HC_compress_generic (state, src, dst, srcSize, maxDstSize, limitedOutput);
     else
         return LZ5HC_compress_generic (state, src, dst, srcSize, maxDstSize, noLimit);
@@ -2166,7 +2178,7 @@ static int LZ5_compressHC_continue_generic (LZ5HC_Data_Structure* ctxPtr,
 
 int LZ5_compress_HC_continue (LZ5_streamHC_t* LZ5_streamHCPtr, const char* source, char* dest, int inputSize, int maxOutputSize)
 {
-    if (maxOutputSize < LZ5_compressBound(inputSize))
+    if ((size_t)maxOutputSize < LZ5_WORST_OUTPUT(inputSize))   /* not LZ5_compressBound: see LZ5_WORST_OUTPUT */
         return LZ5_compressHC_continue_generic ((LZ5HC_Data_Structure*)LZ5_streamHCPtr, source, dest, inputSize, maxOutputSize, limitedOutput);
     else
         return LZ5_compressHC_continue_generic ((LZ5HC_Data_Structure*)LZ5_streamHCPtr, source, dest, inputSize, maxOutputSize, noLimit);

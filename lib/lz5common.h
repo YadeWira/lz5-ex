@@ -83,6 +83,18 @@ extern "C" {
 #define MFLIMIT (WILDCOPYLENGTH+MINMATCH)
 static const int LZ5_minLength = (MFLIMIT+1);
 
+/* The largest output any LZ5 parser can produce for isize input bytes.
+ * LZ5_compressBound() is LZ4's bound and does not hold for LZ5: a 3-byte match
+ * with a 24-bit offset takes 4 output bytes, and on base64 or audio some parsers
+ * do expand past it (by up to ~4% at levels 9-13 on 16 MB of base64). Every
+ * sequence turns at least MINMATCH input bytes into at most one byte more than
+ * that - a token and a 3-byte offset - plus run-length bytes (one per 255, and
+ * one when a run starts), and the last literals add a constant. So the output
+ * stays under isize + isize/MINMATCH + isize/128 + 64. The compressors skip
+ * their output checks only when dst is at least this big; below it they check
+ * every write and return 0 rather than write past dst. */
+#define LZ5_WORST_OUTPUT(isize) ((size_t)(isize) + (size_t)(isize)/MINMATCH + (size_t)(isize)/128 + 64)
+
 #define KB *(1 <<10)
 #define MB *(1 <<20)
 #define GB *(1U<<30)
@@ -141,6 +153,33 @@ static const int LZ5_minLength = (MFLIMIT+1);
 ***************************************/
 #include "mem.h" // MEM_read
 #include "lz5.h" // LZ5HC_MAX_CLEVEL
+
+
+/* Encode a whole block as a single run of literals. That is always a valid
+ * block, and it never takes more than isize + isize/255 + 2 bytes, which
+ * LZ5_compressBound() covers. It is the fallback for a parser whose output did
+ * not fit in maxDstSize: some parsers expand incompressible-looking data (by up
+ * to ~4% on base64), and with this the documented guarantee - compression
+ * succeeds whenever maxDstSize >= LZ5_compressBound(srcSize) - holds, and the
+ * block comes out smaller than the expanded attempt would have been.
+ * Returns the compressed size, or 0 if even this does not fit. */
+FORCE_INLINE int LZ5_encodeLiteralBlock(const char* src, int isize, char* dst, int maxDstSize)
+{
+    BYTE* op = (BYTE*)dst;
+    const size_t run = (size_t)isize;
+    const size_t need = 1 + (run >= RUN_MASK ? 1 + (run - RUN_MASK) / 255 : 0) + run;
+    if (isize < 0 || maxDstSize < 0 || need > (size_t)maxDstSize) return 0;
+    if (run >= RUN_MASK) {
+        size_t len = run - RUN_MASK;
+        *op++ = (BYTE)(RUN_MASK << ML_BITS);
+        for (; len >= 255; len -= 255) *op++ = 255;
+        *op++ = (BYTE)len;
+    } else {
+        *op++ = (BYTE)(run << ML_BITS);
+    }
+    memcpy(op, src, run);
+    return (int)need;
+}
 
     
 static const U32 prime4bytes = 2654435761U;

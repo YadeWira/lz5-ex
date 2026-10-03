@@ -7,6 +7,8 @@
 #   test_stream       linked-block streaming round trip, every HC level
 #   test_decode_fuzz  the safe decoder against damaged input (best under ASan:
 #                     make -C tests test MOREFLAGS="-g -fsanitize=address,undefined")
+#   test_bound        no level writes past maxDstSize = LZ5_compressBound(), and
+#                     each still succeeds there
 
 CC       ?= cc
 CFLAGS   ?= -O2 -std=gnu99
@@ -15,7 +17,7 @@ LZ5DIR   := ../lib
 CPPFLAGS := -I$(LZ5DIR) -DXXH_NAMESPACE=LZ5_
 
 LIB_SRC  := $(LZ5DIR)/lz5.c $(LZ5DIR)/lz5hc.c $(LZ5DIR)/lz5frame.c $(LZ5DIR)/xxhash.c
-TESTS    := test_hc_tables test_stream test_decode_fuzz
+TESTS    := test_hc_tables test_stream test_decode_fuzz test_bound
 
 .PHONY: all test clean
 
@@ -36,6 +38,7 @@ test: $(TESTS)
 	MALLOC_PERTURB_=85  ./test_hc_tables
 	./test_stream
 	./test_decode_fuzz
+	./test_bound
 
 clean:
 	rm -f $(TESTS)
