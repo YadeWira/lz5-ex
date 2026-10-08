@@ -208,40 +208,51 @@ FORCE_INLINE int LZ5_compress_generic(
         const BYTE* match;
         BYTE* token;
         {
+            /* Same probe sequence as the classic loop (step 1 once, then
+             * acceleration for 64 probes, acceleration+1 for 64, ...), but the
+             * step is constant inside a chunk and the chunk end is folded into
+             * the mflimit test, so the inner loop does no step bookkeeping.
+             * The first probe is peeled: on dense data it usually hits. */
             const BYTE* forwardIp = ip;
-            unsigned step = 1;
-            unsigned searchMatchNb = acceleration << LZ5_skipTrigger;
+            U32 h = forwardH;
+            size_t step;
+#define LZ5_PROBE(missAction) {                                               \
+                    match = LZ5_getPositionOnHash(h, ctx, tableType, base);   \
+                    if (dict==usingExtDict) {                                 \
+                        if (match<(const BYTE*)source) { refDelta = dictDelta; lowLimit = dictionary; } \
+                        else { refDelta = 0; lowLimit = (const BYTE*)source; } \
+                    }                                                         \
+                    {   U32 const hNext = LZ5_hashPosition(forwardIp, tableType); \
+                        LZ5_putPositionOnHash(ip, h, ctx, tableType, base);   \
+                        h = hNext; }                                          \
+                    if ((dictIssue==dictSmall) && (match < lowRefLimit)) missAction; \
+                    if ((tableType!=byU16) && (match + MAX_DISTANCE < ip)) missAction; /* window first: */ \
+                    if (likely(MEM_read32(match+refDelta) != MEM_read32(ip))) missAction; /* then read */ \
+                    goto _match_found; }
 
-            /* Find a match */
-            do {
-                U32 h = forwardH;
-                ip = forwardIp;
-                forwardIp += step;
-                step = (searchMatchNb++ >> LZ5_skipTrigger);
+            ip = forwardIp;
+            forwardIp += 1;
+            if (unlikely(forwardIp > mflimit)) goto _last_literals;
+            do LZ5_PROBE(break) while (0);
 
-                if (unlikely(forwardIp > mflimit)) goto _last_literals;
-
-                match = LZ5_getPositionOnHash(h, ctx, tableType, base);
-                if (dict==usingExtDict)
+            step = acceleration;
+            for (;;)
+            {
+                const BYTE* const chunkEnd = ((size_t)(mflimit - forwardIp) > (step << LZ5_skipTrigger)) ? forwardIp + (step << LZ5_skipTrigger) : mflimit;
+                for (;;)
                 {
-                    if (match<(const BYTE*)source)
-                    {
-                        refDelta = dictDelta;
-                        lowLimit = dictionary;
-                    }
-                    else
-                    {
-                        refDelta = 0;
-                        lowLimit = (const BYTE*)source;
-                    }
+                    ip = forwardIp;
+                    forwardIp += step;
+                    if (unlikely(forwardIp > chunkEnd)) break;
+                    LZ5_PROBE(continue)
                 }
-                forwardH = LZ5_hashPosition(forwardIp, tableType);
-                LZ5_putPositionOnHash(ip, h, ctx, tableType, base);
-
-            } while ( ((dictIssue==dictSmall) ? (match < lowRefLimit) : 0)
-                || ((tableType==byU16) ? 0 : (match + MAX_DISTANCE < ip))
-                || (MEM_read32(match+refDelta) != MEM_read32(ip)) );
+                if (forwardIp > mflimit) goto _last_literals;
+                forwardIp = ip;                       /* undo: next probe uses the next step */
+                step++;
+            }
+#undef LZ5_PROBE
         }
+_match_found:
 
         /* Catch up */
         /* refDelta is size_t : writing match[refDelta-1] would underflow it to
@@ -252,7 +263,9 @@ FORCE_INLINE int LZ5_compress_generic(
             /* Encode Literal length */
             unsigned litLength = (unsigned)(ip - anchor);
             token = op++;
-            if ((outputLimited) && (unlikely(op + litLength + (2 + 1 + LASTLITERALS) + (litLength/255) > olimit)))
+            /* litLength>>7 >= litLength/255 : the cheap test passing implies the exact one */
+            if ((outputLimited) && (unlikely(op + litLength + (2 + 1 + LASTLITERALS) + (litLength>>7) > olimit))
+                                && (op + litLength + (2 + 1 + LASTLITERALS) + (litLength/255) > olimit))
                 return 0;   /* Check output limit */
 
             if (ip-match >= LZ5_SHORT_OFFSET_DISTANCE && ip-match < LZ5_MID_OFFSET_DISTANCE && (U32)(ip-match) != last_off)
@@ -342,18 +355,12 @@ _next_match:
              * the caller sized it exactly. */
             if (matchLength>=ML_MASK)
             {
-                if ((outputLimited) && (unlikely(op + 2 > olimit))) return 0;   /* Check output limit */
                 *token += ML_MASK;
                 matchLength -= ML_MASK;
-                for (; matchLength >= 510 ; matchLength-=510) {
-                    if ((outputLimited) && (unlikely(op + 2 > olimit))) return 0;
-                    *op++ = 255; *op++ = 255;
-                }
-                if (matchLength >= 255) {
-                    if ((outputLimited) && (unlikely(op + 2 > olimit))) return 0;
-                    matchLength-=255; *op++ = 255;
-                }
-                if ((outputLimited) && (unlikely(op + 1 > olimit))) return 0;
+                /* exactly matchLength/255 + 1 bytes follow : one exact check */
+                if ((outputLimited) && (unlikely((size_t)(olimit - op) < matchLength/255 + 1))) return 0;
+                for (; matchLength >= 510 ; matchLength-=510) { *op++ = 255; *op++ = 255; }
+                if (matchLength >= 255) { matchLength-=255; *op++ = 255; }
                 *op++ = (BYTE)matchLength;
             }
             else *token += (BYTE)(matchLength);
