@@ -244,11 +244,14 @@ FORCE_INLINE void LZ5HC_BinTree_InsertFull(LZ5HC_Data_Structure* ctx, const BYTE
 
                     if (mlt > LZ5_OPT_NUM) break;
                 }
+                /* the byte after the match: once a dictionary match has run into the
+                 * prefix it is read from base, not dictBase (that read went past the
+                 * dictionary). Only this branch can cross, so the prefix branch keeps
+                 * the plain compare. */
+                if (matchIndex + mlt >= dictLimit) match = base + matchIndex;
             }
             
-            /* the byte after the match: once a dictionary match has run into the prefix, it
-             * is read from base, not dictBase (that read went past the dictionary) */
-            if (*(ip+mlt) < *(((matchIndex + mlt >= dictLimit) ? base + matchIndex : match) + mlt))
+            if (*(ip+mlt) < *(match+mlt))
             {
                 *ptr0 = delta0;
                 ptr0 = &chainTable[(matchIndex*2) & contentMask];
@@ -958,11 +961,12 @@ FORCE_INLINE int LZ5HC_BinTree_GetAllMatches (
 
                 if (best_mlen > LZ5_OPT_NUM) break;
             }
+            /* the byte after the match comes from the prefix once the match has run
+             * into it (see LZ5HC_BinTree_InsertFull) */
+            if (matchIndex + mlt >= dictLimit) match = base + matchIndex;
         }
         
-        /* the byte after the match: once a dictionary match has run into the prefix, it
-         * is read from base, not dictBase (that read went past the dictionary) */
-        if (*(ip+mlt) < *(((matchIndex + mlt >= dictLimit) ? base + matchIndex : match) + mlt))
+        if (*(ip+mlt) < *(match+mlt))
         {
             *ptr0 = delta0;
             ptr0 = &chainTable[(matchIndex*2) & contentMask];

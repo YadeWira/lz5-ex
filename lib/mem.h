@@ -403,6 +403,14 @@ MEM_STATIC size_t MEM_count(const BYTE* pIn, const BYTE* pMatch, const BYTE* pIn
 {
     const BYTE* const pStart = pIn;
 
+    /* the first word, peeled: most calls end in it */
+    if (pIn < pInLimit-(sizeof(size_t)-1))
+    {
+        const size_t diff = MEM_read_ARCH(pMatch) ^ MEM_read_ARCH(pIn);
+        if (diff) return MEM_NbCommonBytes(diff);
+        pIn += sizeof(size_t); pMatch += sizeof(size_t);
+    }
+
     while ((pIn<pInLimit-(sizeof(size_t)-1)))
     {
         size_t diff = MEM_read_ARCH(pMatch) ^ MEM_read_ARCH(pIn);
