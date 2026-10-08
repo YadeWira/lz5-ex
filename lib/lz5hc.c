@@ -1198,13 +1198,17 @@ FORCE_INLINE int LZ5HC_compress_optimal_price_body (
            mlen = (i>0) ? (size_t)matches[i-1].len+1 : best_mlen;
            best_mlen = (matches[i].len < LZ5_OPT_NUM) ? matches[i].len : LZ5_OPT_NUM;
            LZ5_LOG_PARSER("%d: start Found mlen=%d off=%d best_mlen=%d last_pos=%d\n", (int)(ip-source), matches[i].len, matches[i].off, best_mlen, last_pos);
+           {
+           const size_t fixed = LZ5HC_get_price(llen, matches[i].off, 0) - LZ5_LEN_COST(0) - llen;
+           if (mlen <= best_mlen) while (last_pos < best_mlen) { opt[last_pos+1].price = 1<<30; last_pos++; }
            while (mlen <= best_mlen)
            {
                 litlen = 0;
-                price = LZ5HC_get_price(llen + litlen, matches[i].off, mlen - MINMATCH) - llen;
-                if (mlen > last_pos || price < (size_t)opt[mlen].price)
+                price = fixed + LZ5_LEN_COST(mlen - MINMATCH);
+                if (price < (size_t)opt[mlen].price)
                     SET_PRICE(mlen, mlen, matches[i].off, litlen, price);
                 mlen++;
+           }
            }
         }
 
@@ -1372,31 +1376,36 @@ FORCE_INLINE int LZ5HC_compress_optimal_price_body (
                 if (mlen < (size_t)matches[i].back + 1)
                     mlen = matches[i].back + 1; 
 
+                {
+                size_t fixed;
+                if (opt[cur2].mlen == 1)
+                {
+                    litlen = opt[cur2].litlen;
+                    if (cur2 != litlen)
+                        fixed = opt[cur2 - litlen].price + LZ5HC_get_price(litlen, matches[i].off, 0);
+                    else
+                        fixed = LZ5HC_get_price(llen + litlen, matches[i].off, 0) - llen;
+                }
+                else
+                {
+                    litlen = 0;
+                    fixed = opt[cur2].price + LZ5HC_get_price(0, matches[i].off, 0);
+                }
+                fixed -= LZ5_LEN_COST(0);
+                if (mlen <= best_mlen) while (last_pos < cur2 + best_mlen) { opt[last_pos+1].price = 1<<30; last_pos++; }
                 while (mlen <= best_mlen)
                 {
-                    if (opt[cur2].mlen == 1)
-                    {
-                        litlen = opt[cur2].litlen;
-
-                        if (cur2 != litlen)
-                            price = opt[cur2 - litlen].price + LZ5HC_get_price(litlen, matches[i].off, mlen - MINMATCH);
-                        else
-                            price = LZ5HC_get_price(llen + litlen, matches[i].off, mlen - MINMATCH) - llen;
-                    }
-                    else
-                    {
-                        litlen = 0;
-                        price = opt[cur2].price + LZ5HC_get_price(litlen, matches[i].off, mlen - MINMATCH);
-                    }
+                    price = fixed + LZ5_LEN_COST(mlen - MINMATCH);
 
                     LZ5_LOG_PARSER("%d: Found2 pred=%d mlen=%d best_mlen=%d off=%d price=%d litlen=%d price[%d]=%d\n", (int)(inr-source), matches[i].back, mlen, best_mlen, matches[i].off, price, litlen, cur - litlen, opt[cur - litlen].price);
     //                if (cur2 + mlen > last_pos || ((matches[i].off != opt[cur2 + mlen].off) && (price < opt[cur2 + mlen].price)))
-                    if (cur2 + mlen > last_pos || price < (size_t)opt[cur2 + mlen].price)
+                    if (price < (size_t)opt[cur2 + mlen].price)
                     {
                         SET_PRICE(cur2 + mlen, mlen, matches[i].off, litlen, price);
                     }
 
                     mlen++;
+                }
                 }
             }
         } //  for (skip_num = 0, cur = 1; cur <= last_pos; cur++)
