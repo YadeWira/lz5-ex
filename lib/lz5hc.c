@@ -1093,7 +1093,7 @@ FORCE_INLINE int LZ5HC_encodeSequence (
     }
 
 
-static int LZ5HC_compress_optimal_price (
+FORCE_INLINE int LZ5HC_compress_optimal_price_body (
     LZ5HC_Data_Structure* ctx,
     const BYTE* source,
     char* dest,
@@ -1468,7 +1468,7 @@ encode: // cur, last_pos, best_mlen, best_off have to be set
 
 
 
-static int LZ5HC_compress_lowest_price (
+FORCE_INLINE int LZ5HC_compress_lowest_price_body (
     LZ5HC_Data_Structure* ctx,
     const char* source,
     char* dest,
@@ -1613,7 +1613,7 @@ _Encode:
 
 
 
-static int LZ5HC_compress_price_fast (
+FORCE_INLINE int LZ5HC_compress_price_fast_body (
     LZ5HC_Data_Structure* ctx,
     const char* source,
     char* dest,
@@ -2001,22 +2001,45 @@ FORCE_INLINE int LZ5HC_compress_fast_generic (
 
 /* limit is a compile-time constant inside each copy, so the output-bound checks
  * in the hot loop and in LZ5HC_encodeSequence fold away when unbounded. */
+/* Each parser runs on a local copy of the context, written back at the end.
+ * The copy's address never leaves the inlined body, so the compiler can keep
+ * base, dictLimit, last_off and the parameters in registers; through the
+ * caller's pointer it had to reload them after every store into the U32
+ * tables, which might have aliased them. Wrapping covers every early return. */
 static int LZ5HC_compress_fast (LZ5HC_Data_Structure* ctx, const char* source, char* dest,
                                 int inputSize, int maxOutputSize, limitedOutput_directive limit)
 {
-    const int plus = (ctx->params.hashLog3 != 0);
-    if (ctx->params.searchLength == 6)
+    LZ5HC_Data_Structure c = *ctx;
+    const int plus = (c.params.hashLog3 != 0);
+    int r;
+    if (c.params.searchLength == 6)
     {
         if (limit)
-            return plus ? LZ5HC_compress_fast_generic(ctx, source, dest, inputSize, maxOutputSize, limitedOutput, 1, 6)
-                        : LZ5HC_compress_fast_generic(ctx, source, dest, inputSize, maxOutputSize, limitedOutput, 0, 6);
-        return plus ? LZ5HC_compress_fast_generic(ctx, source, dest, inputSize, maxOutputSize, noLimit, 1, 6)
-                    : LZ5HC_compress_fast_generic(ctx, source, dest, inputSize, maxOutputSize, noLimit, 0, 6);
+            r = plus ? LZ5HC_compress_fast_generic(&c, source, dest, inputSize, maxOutputSize, limitedOutput, 1, 6)
+                     : LZ5HC_compress_fast_generic(&c, source, dest, inputSize, maxOutputSize, limitedOutput, 0, 6);
+        else
+            r = plus ? LZ5HC_compress_fast_generic(&c, source, dest, inputSize, maxOutputSize, noLimit, 1, 6)
+                     : LZ5HC_compress_fast_generic(&c, source, dest, inputSize, maxOutputSize, noLimit, 0, 6);
     }
-    if (limit) return LZ5HC_compress_fast_generic(ctx, source, dest, inputSize, maxOutputSize, limitedOutput, -1, 0);
-    return LZ5HC_compress_fast_generic(ctx, source, dest, inputSize, maxOutputSize, noLimit, -1, 0);
+    else if (limit) r = LZ5HC_compress_fast_generic(&c, source, dest, inputSize, maxOutputSize, limitedOutput, -1, 0);
+    else            r = LZ5HC_compress_fast_generic(&c, source, dest, inputSize, maxOutputSize, noLimit, -1, 0);
+    *ctx = c;
+    return r;
 }
 
+#define LZ5HC_LOCAL_CTX_WRAPPER(name, srcType)                                              \
+static int name (LZ5HC_Data_Structure* ctx, srcType source, char* dest,                     \
+                 int inputSize, int maxOutputSize, limitedOutput_directive limit)           \
+{                                                                                           \
+    LZ5HC_Data_Structure c = *ctx;   /* see LZ5HC_compress_fast */                          \
+    const int r = name##_body(&c, source, dest, inputSize, maxOutputSize, limit);           \
+    *ctx = c;                                                                               \
+    return r;                                                                               \
+}
+LZ5HC_LOCAL_CTX_WRAPPER(LZ5HC_compress_price_fast, const char*)
+LZ5HC_LOCAL_CTX_WRAPPER(LZ5HC_compress_lowest_price, const char*)
+LZ5HC_LOCAL_CTX_WRAPPER(LZ5HC_compress_optimal_price, const BYTE*)
+#undef LZ5HC_LOCAL_CTX_WRAPPER
 
 
 static int LZ5HC_compress_generic (void* ctxvoid, const char* source, char* dest, int inputSize, int maxOutputSize, limitedOutput_directive limit)
