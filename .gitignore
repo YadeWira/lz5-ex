@@ -47,6 +47,10 @@ lz5-*.sha256
 /programs/frametest
 /programs/frametest32
 /tests/test_hc_tables
+/tests/test_stream
+/tests/test_decode_fuzz
+/tests/test_bound
+/tests/test_destsize
 
 # Test leftovers
 tmp
