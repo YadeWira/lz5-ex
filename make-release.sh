@@ -58,24 +58,10 @@ echo "==> staging"
 rm -rf "$STAGE" "$TARBALL"
 mkdir -p "$STAGE"
 
-cp -R lib "$STAGE/lib"
-cp -R programs "$STAGE/programs"
-[ -d tests ] && cp -R tests "$STAGE/tests"
-[ -d projects ] && cp -R projects "$STAGE/projects"
-
-cp Makefile NEWS README.md "$STAGE/"
-cp lz5_Block_format.md lz5_Frame_format.md "$STAGE/" 2>/dev/null || true
-[ -d .github ] && cp -R .github "$STAGE/.github"
-
-# Build artefacts must not ship.
-find "$STAGE" -name '*.o' -delete
-find "$STAGE" -name '*.a' -delete
-find "$STAGE" -name '*.so' -delete
-find "$STAGE" -name '*.so.*' -delete
-find "$STAGE" -name '*.dylib' -delete
-find "$STAGE" -name '*.exe' -delete
-find "$STAGE" -name 'test_hc_tables' -delete
-rm -f "$STAGE/programs/liblz5.pc"
+# Only files under version control ship, so build artefacts (programs/lz5,
+# the test binaries, objects, libraries) cannot leak into the tarball.
+git ls-files -z lib programs tests projects .github Makefile NEWS README.md \
+    lz5_Block_format.md lz5_Frame_format.md | xargs -0 cp --parents -t "$STAGE"
 
 # Licences: lib/ is BSD (lib/LICENSE), programs/ is GPLv2 (programs/COPYING).
 [ -f lib/LICENSE ] && cp lib/LICENSE "$STAGE/LICENSE.lib"
