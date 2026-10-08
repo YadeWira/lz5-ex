@@ -2027,12 +2027,23 @@ static int LZ5HC_compress_fast (LZ5HC_Data_Structure* ctx, const char* source, c
     return r;
 }
 
+/* Levels 4-15 all hash 4 bytes and carry both a 3-byte index and a chain
+ * table. Inside the first branch below those facts are known to the compiler
+ * (the local copy's fields cannot change behind its back), so the inlined body
+ * loses LZ5HC_hashPtr's runtime switch and LZ5HC_Insert's NULL and hashLog3
+ * tests. Any other parameter set takes the general copy. */
 #define LZ5HC_LOCAL_CTX_WRAPPER(name, srcType)                                              \
 static int name (LZ5HC_Data_Structure* ctx, srcType source, char* dest,                     \
                  int inputSize, int maxOutputSize, limitedOutput_directive limit)           \
 {                                                                                           \
     LZ5HC_Data_Structure c = *ctx;   /* see LZ5HC_compress_fast */                          \
-    const int r = name##_body(&c, source, dest, inputSize, maxOutputSize, limit);           \
+    int r;                                                                                  \
+    if (c.params.searchLength == 4 && c.params.hashLog3 != 0 && c.chainTable != NULL)       \
+    {                                                                                       \
+        c.params.searchLength = 4;                                                          \
+        r = name##_body(&c, source, dest, inputSize, maxOutputSize, limit);                 \
+    }                                                                                       \
+    else r = name##_body(&c, source, dest, inputSize, maxOutputSize, limit);                \
     *ctx = c;                                                                               \
     return r;                                                                               \
 }
