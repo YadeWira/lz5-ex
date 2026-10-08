@@ -965,6 +965,12 @@ FORCE_INLINE int LZ5_decompress_generic(
     BYTE* cpy;
     BYTE* oexit = op + targetOutputSize;
     const BYTE* const lowLimit = lowPrefix - dictSize;
+    /* Fast-path limits: far enough from both ends that fixed-size copies are safe.
+     * Input: a token, at most 6 literals and at most 3 offset bytes, read as
+     * 8 + 4 bytes - 16 ahead covers it. Output: at most 6 literals written as 8,
+     * and a match of at most 9 bytes written as 16 - 32 ahead covers it. */
+    const BYTE* const iFast = (inputSize  > 16) ? iend - 16 : (const BYTE*)source;
+    BYTE* const oFast       = (outputSize > 32) ? oend - 32 : (BYTE*)dest;
 
     /* dictStart is NULL when there is no dictionary (noDict) : adding 0 to a
      * null pointer is undefined behaviour, even though the result is unused. */
@@ -994,6 +1000,44 @@ FORCE_INLINE int LZ5_decompress_generic(
 
         /* get literal length */
         token = *ip++;
+
+        /* Fast path for the common short sequence: literal run that fits its
+         * token field (at most 6 bytes), a match length that fits too, offset
+         * >= 8 and inside the prefix, and both pointers far from the ends.
+         * Literals and match are moved with fixed 8- and 16-byte copies; with
+         * offset >= 8 the 8-byte steps respect the overlap. Anything else falls
+         * into the general code below, with all of its checks. */
+        if ((endOnInput) && (!partialDecoding) && likely(ip < iFast) && likely(op < oFast))
+        {
+            const unsigned lmask = (token >> 6) ? RUN_MASK2 : RUN_MASK;
+            const size_t ll = (token >> ML_BITS) & lmask;
+            if (likely(ll != lmask))
+            {
+                MEM_copy8(op, ip);
+                op += ll; ip += ll;
+                if (token >> 7) { offset = *ip + (((token>>ML_RUN_BITS2)&3)<<8); ip++; }
+                else {
+                    const unsigned c2 = (token >> 5) & 3;
+                    const unsigned adv = 2u + (c2 == 2) - 2u * (c2 == 3);
+                    offset = MEM_readLE32(ip) & ((1u << (8*adv)) - 1u);
+                    ip += adv;
+                    if (c2 == 3) offset = last_off;
+                }
+                last_off = offset;
+                match = op - offset;
+                if ((checkOffset) && (unlikely(match < lowLimit))) goto _output_error;   /* Error : offset outside buffers */
+                if (likely(offset >= 8) && likely((token & ML_MASK) != ML_MASK) && ((dict!=usingExtDict) || (match >= lowPrefix)))
+                {
+                    MEM_copy8(op, match);
+                    MEM_copy8(op+8, match+8);
+                    op += (token & ML_MASK) + MINMATCH;
+                    continue;
+                }
+                length = token & ML_MASK;
+                goto _have_matchlength;
+            }
+        }
+
         if (token>>6)
         {
             if ((length=(token>>ML_BITS)&RUN_MASK2) == RUN_MASK2)
@@ -1111,6 +1155,7 @@ FORCE_INLINE int LZ5_decompress_generic(
 
         /* get matchlength */
         length = token & ML_MASK;
+_have_matchlength:
         if (length == ML_MASK)
         {
             unsigned s;
