@@ -1038,8 +1038,9 @@ FORCE_INLINE int LZ5_decompress_generic(
                     if (c2 == 3) offset = last_off;
                 }
                 last_off = offset;
+                /* compare distances, not pointers: see the general path below */
+                if ((checkOffset) && (unlikely(offset > (size_t)(op - lowLimit)))) goto _output_error;   /* Error : offset outside buffers */
                 match = op - offset;
-                if ((checkOffset) && (unlikely(match < lowLimit))) goto _output_error;   /* Error : offset outside buffers */
                 if (likely(offset >= 8) && likely((token & ML_MASK) != ML_MASK) && ((dict!=usingExtDict) || (match >= lowPrefix)))
                 {
                     MEM_copy8(op, match);
@@ -1164,8 +1165,13 @@ FORCE_INLINE int LZ5_decompress_generic(
 #endif
 
         last_off = offset;
+        /* Compare distances, not pointers. op - offset for an offset larger than
+         * the output so far is outside the buffer and, when the buffer sits at a
+         * low address (32-bit systems; qemu-user on ARM64 showed it), wraps around
+         * to a huge pointer that passed the old "match < lowLimit" test - the
+         * decoder then copied from a wild address. Inherited from LZ5 1.5.0. */
+        if ((checkOffset) && (unlikely(offset > (size_t)(op - lowLimit)))) goto _output_error;   /* Error : offset outside buffers */
         match = op - offset;
-        if ((checkOffset) && (unlikely(match < lowLimit))) goto _output_error;   /* Error : offset outside buffers */
 
         /* get matchlength */
         length = token & ML_MASK;
