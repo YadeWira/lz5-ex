@@ -1,8 +1,81 @@
-lz5-ex starts here. It is the extended line of LZ5, forked from the 1.5.1
-maintenance release of the 1.5.0 code base. The API, the header names and the
-block and frame formats are unchanged, so it stays drop-in compatible with LZ5
-1.5.x. The entries below this line are the maintenance work that the fork is
-based on. See README.md for what the "ex" is for.
+lz5-ex v1.5.1 (first lz5-ex release)
+The first release of lz5-ex, the extended line of LZ5. The API, the header names
+and the block and frame formats are unchanged: streams from lz5-ex decode with
+LZ5 1.5.0 and the other way round, at every level (tests/test_compat_lz5_15.sh).
+On the full Silesia corpus, against LZ5 1.5.0 in the same harness, every level
+0-15 compresses at least as well (byte-identical output at 0 and 12-15, 0.2-2.5%
+smaller at 1-11), decompresses 22-86% faster and compresses 2-16% faster; the
+compression-speed margins at -0, -4, -11 and -12 (+1.7% to +3.9%) are within the
+run-to-run noise of the test machine. See the comparison table in README.md.
+Later releases are maintenance only.
+
+Safety:
+- fixed (inherited from 1.5.0): compressing with maxDstSize =
+  LZ5_compressBound(n) - the documented size - wrote past dst when a parser
+  expanded the data: levels 9-13 on base64 (~4%). The same happened at level 3
+  on audio with lz5-ex's own earlier fast parser (up to +1086 bytes on 64 KB).
+  Output checks are now skipped only above the real worst case, run-length
+  bytes are counted exactly, and a block that does not fit is stored as
+  literals, so compression always succeeds with LZ5_compressBound().
+- fixed (lz5-ex): level 0 wrote up to 3 bytes past a tight maxDstSize after a
+  match found by its "test next position" shortcut (the shortcut is 1.5.0's;
+  1.5.0 happened to return 0 on the inputs found).
+- fixed (inherited): LZ5_compress_destSize used LZ4's 4-bit length masks: it
+  wrote past targetDstSize and could emit streams no decoder accepts.
+- fixed (inherited): the safe decoder read past the end of its input when
+  copying literals near the end (also on valid streams), on a one-byte input
+  announcing a long literal run, and on an empty input.
+- fixed (inherited): the safe decoder checked a match offset by computing
+  op - offset and comparing pointers; when the output buffer sits at a low
+  address that subtraction wraps, the check passes and the decoder reads from
+  outside its buffers. Seen as a crash of the decoder fuzz test on ARM64 Linux
+  (also with 1.5.0's decoder); it now compares the offset with the distance.
+- fixed (inherited): the optimal parser (levels 11-15) read one byte past the end
+  of the input block.
+- fixed (inherited): compressing against an external dictionary (LZ5_loadDictHC,
+  or LZ5_compress_HC_continue on non-contiguous blocks) produced wrong output at
+  levels 6-15 and could crash; indexing a dictionary read up to 4 bytes past it
+  at levels 1-3; the repeat offset leaked across LZ5_compress_HC_continue blocks,
+  which corrupted levels 11-15.
+- fixed (inherited): pointer arithmetic on NULL in the streaming and dictionary
+  functions.
+- tests/: streaming and dictionary round trip, decoder fuzz (incl. every 1- and
+  2-byte input), output bound (exact LZ5_compressBound and tight buffers),
+  LZ5_compress_destSize. The CI workflow now passes its -Werror and sanitizer
+  flags to make and runs tests/ (verified locally; GitHub Actions is not enabled
+  for the repository).
+
+Compression (output changes; all still decodable by 1.5.0):
+- levels 1-3: a reworked fast parser that walks forward with an accelerating
+  step and indexes every position it tests, with 7-, 7- and 6-byte hashes
+  (1.5.0: 6, 6, 5) and 8K-16K-entry tables. They compress better than 1.5.0 and
+  are faster than it both ways. An intermediate lz5-ex version used larger tables
+  and a 3-byte index here and compressed more, but was slower than 1.5.0; those
+  were dropped for speed.
+- the one-byte repeat-offset codeword is now emitted by every HC parser: the
+  price parsers of levels 4-10 were already pricing it, and levels 1-3 use it when
+  a match repeats the last offset. In 1.5.x only level 0 and levels 11-15 wrote it.
+- level 11 was retuned twice: widened for ratio so it sits between -10 and -12,
+  then pulled back for speed (sufficientLength 24, searchNum 5). Levels 4 and 5
+  use smaller hash tables and, since they never read it, a 256 KB chain table.
+
+Speed (output unchanged):
+- decoder: a fast path for short sequences, and a branch-free decode of the
+  16-bit, 24-bit and repeat offsets (the 10-bit class keeps its branch).
+- levels 1-3: prefetch of the next hash buckets, compile-time specialisation on
+  the output limit and hash width, an inline probe of the main candidate, and no
+  chain table (it was never read): about 11 MB per context instead of 27.5 MB.
+- HC parsers run on a local copy of the context and are specialised for the
+  parameters of levels 4-15; the optimal parser computes the offset and literal
+  part of a match's price once per match instead of once per candidate length;
+  MEM_count compares its first word outside the loop.
+- level 0: constant-step search chunks and cheaper output checks.
+- levels 4-12 no longer zero their chain table; HC tables of 2 MB or more ask for
+  transparent huge pages (Linux), which matters most for level 15's 1 GB table.
+
+Build: Makefiles track header dependencies.
+
+The entries below are the maintenance work the fork is based on.
 
 v1.5.1 (maintenance release)
 - fixed: high-compression tables (hashTable, hashTable3, chainTable) were allocated

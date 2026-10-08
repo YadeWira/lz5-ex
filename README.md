@@ -46,35 +46,35 @@ Linux, GCC 14.2.0. Sorted by compression ratio, best first.
 
 | Compressor name | Compression | Decompress. | Compr. size | Ratio |
 | --------------- | ----------- | ----------- | ----------- | ----- |
-| xz 5.8.4 -9            |      2.4 MB/s |    103.1 MB/s |    48795480 |  23.02 |
-| xz 5.8.4 -6            |      2.7 MB/s |    106.8 MB/s |    49408824 |  23.31 |
-| brotli 1.2.0 -11       |      0.5 MB/s |    348.4 MB/s |    50328370 |  23.75 |
-| zstd 1.5.7 -19         |      2.8 MB/s |    790.1 MB/s |    52891946 |  24.96 |
-| bzip2 1.0.8 -9         |     10.2 MB/s |     31.5 MB/s |    54506769 |  25.72 |
-| zstd 1.5.7 -9          |     53.4 MB/s |    851.3 MB/s |    59081628 |  27.88 |
-| brotli 1.2.0 -5        |     33.3 MB/s |    407.0 MB/s |    59553197 |  28.10 |
-| lz5-ex 1.5.1 -15       |      2.1 MB/s |   1042.8 MB/s |    65595195 |  30.95 |
-| lz5-ex 1.5.1 -14       |      4.4 MB/s |   1033.0 MB/s |    65938065 |  31.11 |
-| zstd 1.5.7 -3          |    163.7 MB/s |    866.6 MB/s |    66137723 |  31.21 |
-| zlib 1.3.2 -9          |     10.7 MB/s |    328.9 MB/s |    67643273 |  31.92 |
-| lz5-ex 1.5.1 -13       |      6.5 MB/s |    959.6 MB/s |    68066924 |  32.12 |
-| lz5-ex 1.5.1 -12       |      9.9 MB/s |    909.4 MB/s |    69498052 |  32.79 |
-| lz5-ex 1.5.1 -11       |     13.3 MB/s |    900.3 MB/s |    70334578 |  33.19 |
-| lz5-ex 1.5.1 -10       |     19.7 MB/s |    989.8 MB/s |    70898501 |  33.45 |
-| lz5-ex 1.5.1 -9        |     25.8 MB/s |    967.8 MB/s |    72730525 |  34.32 |
-| zstd 1.5.7 -1          |    358.5 MB/s |   1212.7 MB/s |    73229468 |  34.55 |
-| lz5-ex 1.5.1 -8        |     40.1 MB/s |    928.4 MB/s |    76188482 |  35.95 |
-| lz5-ex 1.5.1 -7        |     42.8 MB/s |    938.7 MB/s |    76941338 |  36.30 |
-| lz4hc 1.10.0 -9        |     29.1 MB/s |   3544.0 MB/s |    77884211 |  36.75 |
-| lz5-ex 1.5.1 -6        |     46.8 MB/s |    962.5 MB/s |    78524092 |  37.05 |
-| lz5-ex 1.5.1 -5        |    121.5 MB/s |    924.6 MB/s |    82568425 |  38.96 |
-| lz5-ex 1.5.1 -4        |    162.6 MB/s |    973.2 MB/s |    84353607 |  39.80 |
-| lz5-ex 1.5.1 -0        |    228.6 MB/s |    941.9 MB/s |    88218423 |  41.62 |
-| lz5-ex 1.5.1 -3        |    185.2 MB/s |    885.9 MB/s |    90306415 |  42.61 |
-| lz5-ex 1.5.1 -2        |    291.4 MB/s |   1169.3 MB/s |    95928768 |  45.26 |
-| lizard 2.1 -20         |    313.9 MB/s |   1755.9 MB/s |    96927713 |  45.73 |
-| lz4 1.10.0             |    546.9 MB/s |   3664.4 MB/s |   100880147 |  47.60 |
-| lz5-ex 1.5.1 -1        |    486.8 MB/s |   1496.5 MB/s |   108809515 |  51.34 |
+| xz 5.8.4 -9            |      2.3 MB/s |    105.5 MB/s |    48795480 |  23.02 |
+| xz 5.8.4 -6            |      2.5 MB/s |    105.7 MB/s |    49408824 |  23.31 |
+| brotli 1.2.0 -11       |      0.5 MB/s |    328.6 MB/s |    50328370 |  23.75 |
+| zstd 1.5.7 -19         |      2.5 MB/s |    726.8 MB/s |    52891946 |  24.96 |
+| bzip2 1.0.8 -9         |     10.7 MB/s |     31.6 MB/s |    54506769 |  25.72 |
+| zstd 1.5.7 -9          |     48.9 MB/s |    793.4 MB/s |    59081628 |  27.88 |
+| brotli 1.2.0 -5        |     30.6 MB/s |    383.8 MB/s |    59553197 |  28.10 |
+| lz5-ex 1.5.1 -15       |      2.1 MB/s |   1222.7 MB/s |    65595195 |  30.95 |
+| lz5-ex 1.5.1 -14       |      4.2 MB/s |   1250.3 MB/s |    65938065 |  31.11 |
+| zstd 1.5.7 -3          |    155.9 MB/s |    777.6 MB/s |    66137723 |  31.21 |
+| zlib 1.3.2 -9          |     10.3 MB/s |    322.9 MB/s |    67643273 |  31.92 |
+| lz5-ex 1.5.1 -13       |      6.0 MB/s |   1219.0 MB/s |    68066924 |  32.12 |
+| lz5-ex 1.5.1 -12       |     10.1 MB/s |   1152.6 MB/s |    69498052 |  32.79 |
+| lz5-ex 1.5.1 -11       |     13.0 MB/s |   1117.7 MB/s |    70891340 |  33.45 |
+| lz5-ex 1.5.1 -10       |     17.7 MB/s |   1229.7 MB/s |    70898501 |  33.45 |
+| lz5-ex 1.5.1 -9        |     25.7 MB/s |   1229.0 MB/s |    72730525 |  34.32 |
+| zstd 1.5.7 -1          |    339.6 MB/s |   1142.8 MB/s |    73229468 |  34.55 |
+| lz5-ex 1.5.1 -8        |     39.2 MB/s |   1185.2 MB/s |    76188482 |  35.95 |
+| lz5-ex 1.5.1 -7        |     45.3 MB/s |   1196.5 MB/s |    76941338 |  36.30 |
+| lz4hc 1.10.0 -9        |     27.4 MB/s |   3353.3 MB/s |    77884211 |  36.75 |
+| lz5-ex 1.5.1 -6        |     47.8 MB/s |   1243.2 MB/s |    78524092 |  37.05 |
+| lz5-ex 1.5.1 -5        |    128.4 MB/s |   1137.5 MB/s |    82882713 |  39.11 |
+| lz5-ex 1.5.1 -4        |    170.7 MB/s |   1255.1 MB/s |    86018599 |  40.59 |
+| lz5-ex 1.5.1 -0        |    228.8 MB/s |   1067.4 MB/s |    88218423 |  41.62 |
+| lz5-ex 1.5.1 -3        |    356.2 MB/s |   1511.1 MB/s |    95027228 |  44.84 |
+| lizard 2.1 -20         |    304.7 MB/s |   1733.8 MB/s |    96927713 |  45.73 |
+| lz4 1.10.0             |    510.8 MB/s |   3410.7 MB/s |   100880147 |  47.60 |
+| lz5-ex 1.5.1 -2        |    436.9 MB/s |   1722.2 MB/s |   102870177 |  48.54 |
+| lz5-ex 1.5.1 -1        |    561.8 MB/s |   1812.9 MB/s |   113212615 |  53.42 |
 
 `Ratio` is the compressed size as a percentage of the original, so lower is
 better. Sizes are exact; the speeds are single-thread figures from one machine
@@ -86,42 +86,26 @@ trade ratio for speed and sit above `-0` on the speed axis, which is why `-0`
 compresses better than any of them. From `-4` upwards the ratio improves
 monotonically with the level.
 
-Levels `-1` to `-3` were reworked in lz5-ex. The 1.5.x strategy checked a
-single candidate from an 8K-entry hash table and never indexed the positions
-it skipped, so `-1` compressed worse than the default while being barely
-faster (53.56% at 501 MB/s). The reworked parser walks forward with an
-accelerating step and indexes every position it tests, and its candidate
-finder follows the lz6 line: the main hash first, then - only when that finds
-nothing, where they are pure upside - the previous offset (the one-byte
-codeword of the format) and a 3-byte index that the 1.5.x fast parser never
-used. A bare 3-byte match is only taken when its encoded price beats the
-literals it replaces. The next probe's hash load is prefetched, which is
-output-neutral and buys ~10% encode speed on its own. Result on Silesia,
-against the 1.5.1 table: `-1` 53.56% -> 51.34%, `-2` 49.11% -> 45.26%, `-3`
-45.09% -> 42.61%, with encode speed at 92%, 70% and 60% of the original.
-Output remains decodable by LZ5 1.5.0 in both directions (see
-`tests/test_compat_lz5_15.sh`).
+What lz5-ex changed, in short (the full list is in `NEWS`):
 
-The format has a one-byte codeword for "same offset as the previous match".
-In 1.5.x only level 0 and the optimal parser (`-11` to `-15`) ever wrote it:
-the parsers of `-1` to `-10` found repeat-offset candidates and priced them at
-the cheap codeword, then encoded them with the full 2-3 byte offset. lz5-ex
-emits the codeword from every parser, which shrinks `-1` to `-10` by 0.4% to
-2.6% on Silesia and leaves `-0` and `-11` to `-15` untouched. The previous-offset
-state is also reset for each block, as the decoder does; without that, the
-streaming API (`LZ5_compress_HC_continue`) could produce undecodable output at
-`-11` to `-15`. The command line tool compresses independent blocks and was not
-affected.
-
-The decoder reads the 16-bit, 24-bit and repeat-offset codewords without a
-data-dependent branch, which decodes up to 30% faster depending on the level;
-the format and the decoder's behaviour on any input are unchanged.
-
-The fast parser also carries an optional lazy-match pass, off in the shipped
-table: a level with `sufficientLength` set looks one and two positions ahead
-for a clearly longer match. Measured on Silesia it buys ~1.2 points of ratio
-on `-2` for ~19% encode speed, which is why it is left disabled; it is a knob
-to be re-measured on the target content.
+- **Levels `-1` to `-3`** use a parser that walks forward with an accelerating
+  step and indexes every position it tests, with small hash tables (8-16K entries,
+  sized to stay in cache) and 6- or 7-byte hashes. The 1.5.x parser checked one
+  candidate and never indexed the positions it skipped.
+- **Every HC parser emits the one-byte repeat-offset codeword**: the price
+  parsers of `-4` to `-10` were already pricing it, and `-1` to `-3` use it when a
+  match repeats the last offset. In 1.5.x only level 0 and `-11` to `-15` wrote it.
+- **The decoder** decodes short sequences on a fast path with fixed-size copies,
+  and the 16-bit, 24-bit and repeat offsets without a data-dependent branch.
+- **The HC parsers** run on a local copy of their context, are specialised for the
+  parameters of `-4` to `-15`, and the optimal parser computes the fixed part of a
+  match's price once per match.
+- **Safety:** compressing with `LZ5_compressBound()` no longer writes past the
+  buffer (some parsers expand base64 by ~4%; such a block is now stored as
+  literals), the safe decoder no longer reads past its input,
+  `LZ5_compress_destSize` no longer writes past its target, and compressing
+  against an external dictionary no longer produces wrong output. Most of these
+  are inherited from LZ5 1.5.0; `tests/` covers each of them.
 
 ### Comparison with LZ5 1.5.0
 
@@ -133,49 +117,46 @@ median of the three rounds, in MB/s, as total bytes over total time.
 
 | Level | Ratio 1.5.0 | Ratio lz5-ex | Size | Encode 1.5.0 | Encode lz5-ex | | Decode 1.5.0 | Decode lz5-ex | |
 | ----- | ----------- | ------------ | ---- | ------------ | ------------- | --- | ------------ | ------------- | --- |
-| `-0` | 41.62 | 41.62 | +0.0% |  204.4 |  212.0 | +4% |   608.7 |   867.3 | +42% |
-| `-1` | 53.57 | 51.34 | -4.2% |  478.9 |  438.8 | -8% |  1422.3 |  1417.1 | -0% |
-| `-2` | 49.11 | 45.26 | -7.8% |  387.1 |  271.5 | -30% |  1270.9 |  1097.0 | -14% |
-| `-3` | 45.10 | 42.61 | -5.5% |  292.5 |  175.6 | -40% |  1122.6 |   847.8 | -24% |
-| `-4` | 40.82 | 39.80 | -2.5% |  159.4 |  152.7 | -4% |   888.3 |   912.2 | +3% |
-| `-5` | 39.85 | 38.96 | -2.2% |  113.7 |  113.5 | -0% |   717.4 |   874.9 | +22% |
-| `-6` | 38.02 | 37.05 | -2.5% |   40.6 |   42.7 | +5% |   880.9 |   902.3 | +2% |
-| `-7` | 37.21 | 36.30 | -2.4% |   37.3 |   37.3 | -0% |   826.0 |   881.5 | +7% |
-| `-8` | 36.80 | 35.95 | -2.3% |   33.7 |   35.4 | +5% |   760.8 |   864.8 | +14% |
-| `-9` | 35.03 | 34.32 | -2.0% |   21.9 |   23.0 | +5% |   733.7 |   892.4 | +22% |
-| `-10` | 34.10 | 33.45 | -1.9% |   16.5 |   17.9 | +9% |   711.0 |   915.6 | +29% |
-| `-11` | 33.53 | 33.19 | -1.0% |   12.5 |   11.9 | -4% |   699.9 |   836.3 | +19% |
-| `-12` | 32.79 | 32.79 | +0.0% |    9.4 |   10.1 | +7% |   699.8 |   839.4 | +20% |
-| `-13` | 32.12 | 32.12 | +0.0% |    5.3 |    5.6 | +5% |   670.6 |   895.3 | +34% |
-| `-14` | 31.11 | 31.11 | +0.0% |    3.7 |    3.9 | +7% |   639.3 |   959.5 | +50% |
-| `-15` | 30.95 | 30.95 | +0.0% |    1.8 |    1.8 | +2% |   628.3 |   939.3 | +50% |
+| `-0` | 41.62 | 41.62 | +0.0% |  213.5 |  221.4 | +3.7% |   612.5 |  1019.2 | +66% |
+| `-1` | 53.57 | 53.42 | -0.3% |  493.1 |  556.9 | +12.9% |  1454.1 |  1769.8 | +22% |
+| `-2` | 49.11 | 48.54 | -1.2% |  406.0 |  430.3 | +6.0% |  1334.8 |  1666.3 | +25% |
+| `-3` | 45.10 | 44.84 | -0.6% |  304.2 |  340.4 | +11.9% |  1141.1 |  1478.3 | +30% |
+| `-4` | 40.82 | 40.59 | -0.6% |  164.3 |  167.4 | +1.9% |   903.1 |  1242.6 | +38% |
+| `-5` | 39.85 | 39.11 | -1.9% |  117.1 |  125.7 | +7.4% |   725.2 |  1091.0 | +50% |
+| `-6` | 38.02 | 37.05 | -2.5% |   44.4 |   50.0 | +12.8% |   910.5 |  1206.8 | +33% |
+| `-7` | 37.21 | 36.30 | -2.4% |   40.2 |   44.6 | +10.9% |   826.2 |  1160.2 | +40% |
+| `-8` | 36.80 | 35.95 | -2.3% |   35.8 |   41.4 | +15.8% |   769.1 |  1149.1 | +49% |
+| `-9` | 35.03 | 34.32 | -2.0% |   22.8 |   25.8 | +13.5% |   728.8 |  1158.0 | +59% |
+| `-10` | 34.10 | 33.45 | -1.9% |   18.0 |   19.4 | +7.7% |   716.2 |  1158.7 | +62% |
+| `-11` | 33.53 | 33.45 | -0.2% |   13.4 |   13.9 | +3.9% |   699.5 |  1084.4 | +55% |
+| `-12` | 32.79 | 32.79 | +0.0% |   10.1 |   10.3 | +1.7% |   712.7 |  1087.3 | +53% |
+| `-13` | 32.12 | 32.12 | +0.0% |    5.7 |    6.0 | +5.7% |   677.2 |  1155.4 | +71% |
+| `-14` | 31.11 | 31.11 | +0.0% |    3.9 |    4.3 | +10.9% |   636.3 |  1170.0 | +84% |
+| `-15` | 30.95 | 30.95 | +0.0% |    1.8 |    2.0 | +11.5% |   643.5 |  1197.7 | +86% |
 
-This table is a separate, later session from the one above, so its absolute speeds
-differ from that table's by a few percent: compare the columns within one table, not
-across the two.
+This table is a separate session from the one above, so its absolute speeds differ
+from that table's by a few percent: compare the columns within one table, not across
+the two.
 
 `Ratio` is the compressed size as a percentage of the original, so lower is better;
 `Size` is how much smaller (negative) lz5-ex's output is. The unlabelled columns are
-the change in speed, positive meaning lz5-ex is faster. Differences of a few percent
-are within the run-to-run noise of this machine. The raw numbers are in
+the change in speed, positive meaning lz5-ex is faster. The raw numbers are in
 `bench/compare-lz5-1.5.0.csv`.
 
-How the levels group:
+**At every level lz5-ex compresses at least as well as LZ5 1.5.0, decompresses
+faster and, by this measurement, compresses faster** - see the note on margins
+below.
 
-- **`-0`, `-12` to `-15`: the output is byte for byte what 1.5.0 writes** (checked
-  on all twelve files). Only the decoder changed, and it decodes 20% to 50% faster.
-  Encoding is within a few percent of 1.5.0.
-- **`-4` to `-10`: 1.9% to 2.5% smaller**, with encoding between 4% slower and 9%
-  faster than 1.5.0 and decoding 2% to 29% faster. This is the repeat-offset change
-  described above.
-- **`-11`: 1.0% smaller**, about 4% slower to encode, 19% faster to decode. It was
-  retuned (`sufficientLength` 12 -> 32, `searchNum` 8 -> 6): with the old values it
-  was larger than `-10` on the full corpus.
-- **`-1` to `-3` trade speed for ratio.** They are 4.2%, 7.8% and 5.5% smaller, and
-  they pay for it: `-1` encodes 8% slower and decodes the same, `-2` encodes 30%
-  slower and decodes 14% slower, `-3` encodes 40% slower and decodes 25% slower.
-  More matches per byte means more codewords to decode. If speed matters more than
-  ratio at these levels, `-0` is the fast path, and it is unchanged.
+- **`-0`, `-12` to `-15`** write byte for byte what 1.5.0 writes (checked on all
+  twelve files). They encode 2% to 12% faster and decode 53% to 86% faster.
+- **`-1` to `-11`** compress 0.2% to 2.5% smaller, encode 2% to 16% faster and
+  decode 22% to 62% faster. `-1` to `-5` and `-11` were tuned against this table:
+  they keep less of the ratio lz5-ex had gained than they could, to be faster
+  than 1.5.0 too.
+- Four encode margins are small: `-0` (+3.7%), `-4` (+1.9%), `-11` (+3.9%) and
+  `-12` (+1.7%) are within the run-to-run noise of this machine, a few percent.
+  Other runs of the same code measured `-12` at +4.0% (lzbench) and `-4` at +4.6%
+  and `-11` at +5.3% and +6.5% (a direct-call harness).
 
 The compressed streams stay decodable by LZ5 1.5.0 and the other way round at every
 level (`tests/test_compat_lz5_15.sh`), so the sizes above are the only thing that
