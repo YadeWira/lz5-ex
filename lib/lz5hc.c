@@ -106,7 +106,15 @@ int LZ5_alloc_mem_HC(LZ5HC_Data_Structure* ctx, int compressionLevel)
     }
     else
     {
-        ctx->chainTable = (U32*) calloc((size_t)1 << ctx->params.contentLog, sizeof(U32));
+        /* The hash-chain strategies (levels 4-12) write every chain entry before
+         * reading it, so zeroing it is wasted work - a 16 MB memset per call once
+         * the allocation comes back from the heap. The binary-tree strategy
+         * (levels 13-15) does read entries it has not written, so it keeps
+         * calloc. Checked with valgrind memcheck and a poisoned heap. */
+        if (ctx->params.strategy == LZ5HC_optimal_price_bt)
+            ctx->chainTable = (U32*) calloc((size_t)1 << ctx->params.contentLog, sizeof(U32));
+        else
+            ctx->chainTable = (U32*) malloc(sizeof(U32) * ((size_t)1 << ctx->params.contentLog));
         if (!ctx->chainTable)
         {
             FREEMEM(ctx->hashTable);
