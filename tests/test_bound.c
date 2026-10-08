@@ -58,6 +58,39 @@ int main(void)
         }
     }
 
+    /* Tight buffers, well below the bound, on compressible text: every level, and
+     * level 0 with acceleration 1-17. The result may be 0, but nothing may be
+     * written past maxDstSize. Level 0 used to write the token and offset of a
+     * match found by its "test next position" shortcut without checking. */
+    {
+        static const char* const words[] = { "offset", "literal", "match", "token", "block", "frame", "the", "lz5" };
+        const int tn = 65536;
+        char* const txt = (char*)malloc((size_t)tn);
+        int pos = 0, step;
+        if (!txt) { printf("out of memory\n"); return 2; }
+        while (pos < tn) {
+            const char* const w = words[rnd() % 8];
+            int k;
+            for (k = 0; w[k] && pos < tn; k++) txt[pos++] = w[k];
+            if (pos < tn) txt[pos++] = (rnd() % 7) ? ' ' : '\n';
+        }
+        for (step = 1; step <= 14; step++) {
+            const int cap = (int)((long)LZ5_compressBound(tn) * step / 14) - (step % 3);
+            int lv;
+            for (lv = -17; lv <= LZ5HC_MAX_CLEVEL; lv++) {   /* lv < 0: level 0 with acceleration -lv */
+                int cs, k;
+                memset(dst + cap, CANARY, CANARY_SIZE);
+                cs = (lv > 0) ? LZ5_compress_HC(txt, (char*)dst, tn, cap, lv)
+                   : (lv == 0) ? LZ5_compress_default(txt, (char*)dst, tn, cap)
+                   : LZ5_compress_fast(txt, (char*)dst, tn, cap, -lv);
+                for (k = 0; k < CANARY_SIZE; k++)
+                    if (dst[cap + k] != CANARY) { printf("  level %d, dst %d: wrote past maxDstSize\n", lv, cap); bad++; break; }
+                if (cs > cap) { printf("  level %d, dst %d: returned %d\n", lv, cap, cs); bad++; }
+            }
+        }
+        free(txt);
+    }
+
     printf("output bound: %d levels, %d did not fit in LZ5_compressBound() (returned 0), %d problems\n",
            LZ5HC_MAX_CLEVEL + 1, didNotFit, bad);
     free(src); free(back); free(dst);

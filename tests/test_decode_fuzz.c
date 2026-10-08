@@ -103,6 +103,27 @@ int main(void)
         free(comp);
     }
 
+    /* Every input of 1 and 2 bytes, plus an empty one: a token announcing an
+     * extended literal run used to make the decoder read the next byte before
+     * checking that there was one. */
+    {
+        int len, v;
+        char* const out = (char*)malloc(64);
+        char dummy = 0;
+        if (!out) { printf("out of memory\n"); return 2; }
+        if (LZ5_decompress_safe(&dummy, out, 0, 64) >= 0) { printf("  empty input was accepted\n"); bad++; }
+        for (len = 1; len <= 2; len++)
+            for (v = 0; v < (len == 1 ? 256 : 65536); v++) {
+                unsigned char* const in = (unsigned char*)malloc((size_t)len);   /* exact size */
+                if (!in) { printf("out of memory\n"); return 2; }
+                in[0] = (unsigned char)v;
+                if (len == 2) in[1] = (unsigned char)(v >> 8);
+                if (LZ5_decompress_safe((const char*)in, out, len, 64) > 64) { printf("  tiny input decoded past the buffer\n"); bad++; }
+                free(in);
+            }
+        free(out);
+    }
+
     printf("decoder fuzz: %d damaged streams, %d rejected, %d decoded, %d problems\n",
            (LZ5HC_MAX_CLEVEL + 1) * iters, rejected, decoded, bad);
     free(src);

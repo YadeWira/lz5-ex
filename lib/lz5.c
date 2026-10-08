@@ -386,7 +386,13 @@ _next_match:
         if ( ((dictIssue==dictSmall) ? (match>=lowRefLimit) : 1)
             && (match+MAX_DISTANCE>=ip)
             && (MEM_read32(match+refDelta)==MEM_read32(ip)) )
-        { token=op++; *token=0; goto _next_match; }
+        {
+            /* this path skips the literal-run check, which is the one that
+             * reserves room for the token and offset: check them here (the
+             * destSize variant is covered by its oMaxSeq test) */
+            if ((outputLimited) && (unlikely(op + 1 + 3 > olimit))) return 0;
+            token=op++; *token=0; goto _next_match;
+        }
 
         /* Prepare next loop */
         forwardH = LZ5_hashPosition(++ip, tableType);
@@ -973,6 +979,7 @@ FORCE_INLINE int LZ5_decompress_generic(
 
     /* Special cases */
     if ((partialDecoding) && (oexit> oend-MFLIMIT)) oexit = oend-MFLIMIT;                         /* targetOutputSize too high => decode everything */
+    if ((endOnInput) && (unlikely(inputSize<=0))) return -1;   /* no token to read: an empty or negative input is an error */
     if ((endOnInput) && (unlikely(outputSize==0))) return ((inputSize==1) && (*ip==0)) ? 0 : -1;  /* Empty output buffer */
     if ((!endOnInput) && (unlikely(outputSize==0))) return (*ip==0?1:-1);
 
@@ -992,6 +999,8 @@ FORCE_INLINE int LZ5_decompress_generic(
             if ((length=(token>>ML_BITS)&RUN_MASK2) == RUN_MASK2)
             {
                 unsigned s;
+                /* the loop condition guards every byte but the first */
+                if ((endOnInput) && unlikely(ip >= iend)) goto _output_error;
                 do
                 {
                     s = *ip++;
@@ -1007,6 +1016,8 @@ FORCE_INLINE int LZ5_decompress_generic(
             if ((length=(token>>ML_BITS)&RUN_MASK) == RUN_MASK)
             {
                 unsigned s;
+                /* the loop condition guards every byte but the first */
+                if ((endOnInput) && unlikely(ip >= iend)) goto _output_error;
                 do
                 {
                     s = *ip++;
