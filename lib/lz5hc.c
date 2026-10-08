@@ -1888,6 +1888,8 @@ FORCE_INLINE int LZ5HC_compress_fast_generic (
     int   ml;
     const BYTE* ref=NULL;
     const BYTE* lowPrefixPtr = ctx->base + ctx->dictLimit;
+    const U32 dictLimitV = ctx->dictLimit;
+    const U32 maxDistM1 = (1U << ctx->params.windowLog) - 1;
     const BYTE* const base = ctx->base;
     U32* const HashTable  = ctx->hashTable;
     U32* const HashTable3 = ctx->hashTable3;
@@ -1956,8 +1958,22 @@ FORCE_INLINE int LZ5HC_compress_fast_generic (
                 *h3Pos = current;
             }
 
-            ml = usePlus ? LZ5HC_FindMatchFast3 (ctx, idx, idx3, ip, matchlimit, (&ref))
-                         : LZ5HC_FindMatchFastest (ctx, idx, ip, matchlimit, (&ref));
+            if (usePlus)
+                ml = LZ5HC_FindMatchFast3 (ctx, idx, idx3, ip, matchlimit, (&ref));
+            else if ((U32)(current - idx - 1) < maxDistM1 && idx >= dictLimitV)
+            {
+                /* Candidate in the prefix: the same test FindMatchFastest makes -
+                 * idx < current and within the window, one unsigned compare - and
+                 * the same length (the first 4 bytes are known equal, so counting
+                 * from byte 4 gives what counting from byte 3 does), inlined. */
+                const BYTE* const m = base + idx;
+                ml = 0;
+                if (MEM_read32(m) == MEM_read32(ip)) { ml = (int)MEM_count(ip+4, m+4, matchlimit) + 4; ref = m; }
+            }
+            else if (idx < dictLimitV)
+                ml = LZ5HC_FindMatchFastest (ctx, idx, ip, matchlimit, (&ref));   /* dictionary or empty slot */
+            else
+                ml = 0;
             if (ml) break;
         }
 
@@ -2033,7 +2049,12 @@ static int LZ5HC_compress_fast (LZ5HC_Data_Structure* ctx, const char* source, c
     LZ5HC_Data_Structure c = *ctx;
     const int plus = (c.params.hashLog3 != 0);
     int r;
-    if (c.params.searchLength == 6)
+    if (c.params.searchLength == 7 && !plus)
+    {
+        if (limit) r = LZ5HC_compress_fast_generic(&c, source, dest, inputSize, maxOutputSize, limitedOutput, 0, 7);
+        else       r = LZ5HC_compress_fast_generic(&c, source, dest, inputSize, maxOutputSize, noLimit, 0, 7);
+    }
+    else if (c.params.searchLength == 6)
     {
         if (limit)
             r = plus ? LZ5HC_compress_fast_generic(&c, source, dest, inputSize, maxOutputSize, limitedOutput, 1, 6)

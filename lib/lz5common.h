@@ -346,9 +346,9 @@ static const LZ5HC_parameters LZ5HC_defaultParameters[LZ5HC_MAX_CLEVEL+1] =
 {
     /* windLog, contentLog,  H, H3,  Snum, SL, SuffL, FS, Strategy */
     {        0,          0,  0,  0,     0,  0,     0,  0, LZ5HC_fast             }, // level 0 - never used
-    { MAXD_LOG,   MAXD_LOG, 13,  0,   4,  6,     0,  0, LZ5HC_fast             }, // level 1
-    { MAXD_LOG,   MAXD_LOG, 17,  0,   4,  6,     0,  0, LZ5HC_fast             }, // level 2
-    { MAXD_LOG,   MAXD_LOG, 17,  13,   4,  6,     0,  0, LZ5HC_fast             }, // level 3
+    { MAXD_LOG,   MAXD_LOG, 13,  0,   4,  7,     0,  0, LZ5HC_fast             }, // level 1
+    { MAXD_LOG,   MAXD_LOG, 13,  0,   1,  7,     0,  0, LZ5HC_fast             }, // level 2
+    { MAXD_LOG,   MAXD_LOG, 14,  0,   1,  6,     0,  0, LZ5HC_fast             }, // level 3
     { MAXD_LOG,   MAXD_LOG, 14, 13,     1,  4,     0,  0, LZ5HC_price_fast       }, // level 4
     { MAXD_LOG,   MAXD_LOG, 17, 13,     1,  4,     0,  0, LZ5HC_price_fast       }, // level 5
     { MAXD_LOG,   MAXD_LOG, 15, 13,     1,  4,     0,  0, LZ5HC_lowest_price     }, // level 6
