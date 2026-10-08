@@ -224,6 +224,9 @@ concatenation of files from an installed Windows 8.1 64-bit.
 Documentation
 -------------------------
 
+The [wiki](https://github.com/YadeWira/lz5-ex/wiki) covers the compression levels,
+the library API, compatibility with LZ5 1.5.0, benchmarks and the safety fixes.
+
 The raw LZ5 block compression format is detailed within [lz5_Block_format].
 
 To compress an arbitrarily long file or data stream, multiple blocks are required.
