@@ -579,7 +579,9 @@ static int LZ5_compress_destSize_generic(
             /* Encode Literal length */
             unsigned litLength = (unsigned)(ip - anchor);
             token = op++;
-            if (op + ((litLength+240)/255) + litLength > oMaxLit)
+            /* (litLength+252)/255 run-length bytes cover both literal fields of LZ5:
+             * RUN_MASK2 (3) and RUN_MASK (7). The LZ4-derived +240 assumed a 15 */
+            if (op + ((litLength+252)/255) + litLength > oMaxLit)
             {
                 /* Not enough space for a last match */
                 op--;
@@ -647,10 +649,13 @@ _next_match:
 
             matchLength = MEM_count(ip+MINMATCH, match+MINMATCH, matchlimit);
 
-            if (op + ((matchLength+240)/255) > oMaxMatch)
+            /* ML_MASK is 7 in LZ5 (15 in LZ4, where these constants came from):
+             * a length needs (matchLength+248)/255 extra bytes, and with k bytes
+             * left the longest encodable one is ML_MASK-1 + k*255 */
+            if (op + ((matchLength+248)/255) > oMaxMatch)
             {
                 /* Match description too long : reduce it */
-                matchLength = (15-1) + (oMaxMatch-op) * 255;
+                matchLength = (ML_MASK-1) + (size_t)(oMaxMatch-op) * 255;
             }
             ip += MINMATCH + matchLength;
 
@@ -688,11 +693,13 @@ _last_literals:
     /* Encode Last Literals */
     {
         size_t lastRunSize = (size_t)(iend - anchor);
-        if (op + 1 /* token */ + ((lastRunSize+240)/255) /* litLength */ + lastRunSize /* literals */ > oend)
+        /* the last run uses the RUN_MASK (7) field: (L+248)/255 extra bytes */
+        if (op + 1 /* token */ + ((lastRunSize+248)/255) /* litLength */ + lastRunSize /* literals */ > oend)
         {
             /* adapt lastRunSize to fill 'dst' */
-            lastRunSize  = (oend-op) - 1;
-            lastRunSize -= (lastRunSize+240)/255;
+            if (op >= oend) return 0;   /* not even room for the token */
+            lastRunSize  = (size_t)(oend-op) - 1;
+            lastRunSize -= (lastRunSize+248)/255;
         }
         ip = anchor + lastRunSize;
 

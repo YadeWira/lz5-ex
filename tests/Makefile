@@ -9,6 +9,8 @@
 #                     make -C tests test MOREFLAGS="-g -fsanitize=address,undefined")
 #   test_bound        no level writes past maxDstSize = LZ5_compressBound(), and
 #                     each still succeeds there
+#   test_destsize     LZ5_compress_destSize stays within targetDstSize and its
+#                     output decodes to the prefix it reports
 
 CC       ?= cc
 CFLAGS   ?= -O2 -std=gnu99
@@ -17,7 +19,7 @@ LZ5DIR   := ../lib
 CPPFLAGS := -I$(LZ5DIR) -DXXH_NAMESPACE=LZ5_
 
 LIB_SRC  := $(LZ5DIR)/lz5.c $(LZ5DIR)/lz5hc.c $(LZ5DIR)/lz5frame.c $(LZ5DIR)/xxhash.c
-TESTS    := test_hc_tables test_stream test_decode_fuzz test_bound
+TESTS    := test_hc_tables test_stream test_decode_fuzz test_bound test_destsize
 
 .PHONY: all test clean
 
@@ -39,6 +41,7 @@ test: $(TESTS)
 	./test_stream
 	./test_decode_fuzz
 	./test_bound
+	./test_destsize
 
 clean:
 	rm -f $(TESTS)
