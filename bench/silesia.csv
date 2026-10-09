@@ -1,7 +1,7 @@
 Compressor name,Compression speed,Decompression speed,Original size,Compressed size,Ratio,Filename
 lz5-ex 1.5.2-dev -0,229.79,929.48,6627202,2927374,44.17,/mnt/IA_LAB/agentes/FLZMA2/silesia/reymont
 lz5-ex 1.5.2-dev -1,377.28,1262.39,6627202,3830898,57.81,/mnt/IA_LAB/agentes/FLZMA2/silesia/reymont
-lz5-ex 1.5.2-dev -2,320.95,1325.83,6627202,3241843,48.92,/mnt/IA_LAB/agentes/FLZMA2/silesia/reymont
+lz5-ex 1.5.2-dev -2,275.74,1165.25,6627202,3146529,47.48,/mnt/IA_LAB/agentes/FLZMA2/silesia/reymont
 lz5-ex 1.5.2-dev -3,263.45,1193.17,6627202,3021234,45.59,/mnt/IA_LAB/agentes/FLZMA2/silesia/reymont
 lz5-ex 1.5.2-dev -4,151.75,1062.65,6627202,2755195,41.57,/mnt/IA_LAB/agentes/FLZMA2/silesia/reymont
 lz5-ex 1.5.2-dev -5,138.36,1037.86,6627202,2745308,41.42,/mnt/IA_LAB/agentes/FLZMA2/silesia/reymont
@@ -30,7 +30,7 @@ zlib 1.3.2 -9,5.69,334.09,6627202,1823196,27.51,/mnt/IA_LAB/agentes/FLZMA2/siles
 lizard 2.1 -20,276.78,1386.37,6627202,3036942,45.83,/mnt/IA_LAB/agentes/FLZMA2/silesia/reymont
 lz5-ex 1.5.2-dev -0,687.32,2162.83,33553445,5061314,15.08,/mnt/IA_LAB/agentes/FLZMA2/silesia/nci
 lz5-ex 1.5.2-dev -1,760.56,2415.12,33553445,5450097,16.24,/mnt/IA_LAB/agentes/FLZMA2/silesia/nci
-lz5-ex 1.5.2-dev -2,732.17,2463.30,33553445,5028803,14.99,/mnt/IA_LAB/agentes/FLZMA2/silesia/nci
+lz5-ex 1.5.2-dev -2,666.20,2139.51,33553445,5286997,15.76,/mnt/IA_LAB/agentes/FLZMA2/silesia/nci
 lz5-ex 1.5.2-dev -3,664.38,2230.51,33553445,5233488,15.60,/mnt/IA_LAB/agentes/FLZMA2/silesia/nci
 lz5-ex 1.5.2-dev -4,372.27,2348.77,33553445,4472106,13.33,/mnt/IA_LAB/agentes/FLZMA2/silesia/nci
 lz5-ex 1.5.2-dev -5,349.92,2386.43,33553445,4434423,13.22,/mnt/IA_LAB/agentes/FLZMA2/silesia/nci
@@ -59,7 +59,7 @@ zlib 1.3.2 -9,14.48,757.68,33553445,2988001,8.91,/mnt/IA_LAB/agentes/FLZMA2/sile
 lizard 2.1 -20,646.42,2460.80,33553445,5201394,15.50,/mnt/IA_LAB/agentes/FLZMA2/silesia/nci
 lz5-ex 1.5.2-dev -0,321.79,1460.80,21606400,6759007,31.28,/mnt/IA_LAB/agentes/FLZMA2/silesia/samba
 lz5-ex 1.5.2-dev -1,606.32,1808.02,21606400,9137193,42.29,/mnt/IA_LAB/agentes/FLZMA2/silesia/samba
-lz5-ex 1.5.2-dev -2,501.89,1728.72,21606400,7852045,36.34,/mnt/IA_LAB/agentes/FLZMA2/silesia/samba
+lz5-ex 1.5.2-dev -2,474.59,1556.69,21606400,7714129,35.70,/mnt/IA_LAB/agentes/FLZMA2/silesia/samba
 lz5-ex 1.5.2-dev -3,421.18,1583.18,21606400,7189830,33.28,/mnt/IA_LAB/agentes/FLZMA2/silesia/samba
 lz5-ex 1.5.2-dev -4,227.88,1540.31,21606400,6414593,29.69,/mnt/IA_LAB/agentes/FLZMA2/silesia/samba
 lz5-ex 1.5.2-dev -5,188.96,1542.49,21606400,6288185,29.10,/mnt/IA_LAB/agentes/FLZMA2/silesia/samba
@@ -88,7 +88,7 @@ zlib 1.3.2 -9,19.28,414.95,21606400,5402710,25.01,/mnt/IA_LAB/agentes/FLZMA2/sil
 lizard 2.1 -20,401.30,2018.06,21606400,7347916,34.01,/mnt/IA_LAB/agentes/FLZMA2/silesia/samba
 lz5-ex 1.5.2-dev -0,181.18,722.64,41458703,17334966,41.81,/mnt/IA_LAB/agentes/FLZMA2/silesia/webster
 lz5-ex 1.5.2-dev -1,433.23,1304.36,41458703,24849981,59.94,/mnt/IA_LAB/agentes/FLZMA2/silesia/webster
-lz5-ex 1.5.2-dev -2,335.96,1204.65,41458703,21440430,51.72,/mnt/IA_LAB/agentes/FLZMA2/silesia/webster
+lz5-ex 1.5.2-dev -2,322.16,1061.12,41458703,21354171,51.51,/mnt/IA_LAB/agentes/FLZMA2/silesia/webster
 lz5-ex 1.5.2-dev -3,261.25,1109.08,41458703,19075291,46.01,/mnt/IA_LAB/agentes/FLZMA2/silesia/webster
 lz5-ex 1.5.2-dev -4,141.64,911.96,41458703,16671374,40.21,/mnt/IA_LAB/agentes/FLZMA2/silesia/webster
 lz5-ex 1.5.2-dev -5,122.77,839.12,41458703,16395340,39.55,/mnt/IA_LAB/agentes/FLZMA2/silesia/webster
@@ -117,7 +117,7 @@ zlib 1.3.2 -9,15.89,317.39,41458703,12073475,29.12,/mnt/IA_LAB/agentes/FLZMA2/si
 lizard 2.1 -20,249.21,1415.39,41458703,18728583,45.17,/mnt/IA_LAB/agentes/FLZMA2/silesia/webster
 lz5-ex 1.5.2-dev -0,192.86,1305.96,9970564,4678739,46.93,/mnt/IA_LAB/agentes/FLZMA2/silesia/mr
 lz5-ex 1.5.2-dev -1,702.48,3016.98,9970564,5903380,59.21,/mnt/IA_LAB/agentes/FLZMA2/silesia/mr
-lz5-ex 1.5.2-dev -2,509.13,2952.97,9970564,5702396,57.19,/mnt/IA_LAB/agentes/FLZMA2/silesia/mr
+lz5-ex 1.5.2-dev -2,513.91,2566.17,9970564,5593392,56.10,/mnt/IA_LAB/agentes/FLZMA2/silesia/mr
 lz5-ex 1.5.2-dev -3,336.14,1973.62,9970564,5144586,51.60,/mnt/IA_LAB/agentes/FLZMA2/silesia/mr
 lz5-ex 1.5.2-dev -4,177.13,1384.35,9970564,4713798,47.28,/mnt/IA_LAB/agentes/FLZMA2/silesia/mr
 lz5-ex 1.5.2-dev -5,140.24,1379.23,9970564,4636222,46.50,/mnt/IA_LAB/agentes/FLZMA2/silesia/mr
@@ -146,7 +146,7 @@ zlib 1.3.2 -9,6.54,303.80,9970564,3660794,36.72,/mnt/IA_LAB/agentes/FLZMA2/siles
 lizard 2.1 -20,279.88,1781.44,9970564,5990992,60.09,/mnt/IA_LAB/agentes/FLZMA2/silesia/mr
 lz5-ex 1.5.2-dev -0,131.79,944.40,8474240,7577555,89.42,/mnt/IA_LAB/agentes/FLZMA2/silesia/x-ray
 lz5-ex 1.5.2-dev -1,2667.42,13067.77,8474240,8500605,100.31,/mnt/IA_LAB/agentes/FLZMA2/silesia/x-ray
-lz5-ex 1.5.2-dev -2,2291.26,12737.41,8474240,8495174,100.25,/mnt/IA_LAB/agentes/FLZMA2/silesia/x-ray
+lz5-ex 1.5.2-dev -2,2302.38,12601.72,8474240,8492746,100.22,/mnt/IA_LAB/agentes/FLZMA2/silesia/x-ray
 lz5-ex 1.5.2-dev -3,354.78,3002.41,8474240,8154384,96.23,/mnt/IA_LAB/agentes/FLZMA2/silesia/x-ray
 lz5-ex 1.5.2-dev -4,131.32,903.69,8474240,7501366,88.52,/mnt/IA_LAB/agentes/FLZMA2/silesia/x-ray
 lz5-ex 1.5.2-dev -5,79.92,815.69,8474240,7246306,85.51,/mnt/IA_LAB/agentes/FLZMA2/silesia/x-ray
@@ -175,7 +175,7 @@ zlib 1.3.2 -9,24.57,191.49,8474240,6045038,71.33,/mnt/IA_LAB/agentes/FLZMA2/sile
 lizard 2.1 -20,346.71,4327.49,8474240,8219584,96.99,/mnt/IA_LAB/agentes/FLZMA2/silesia/x-ray
 lz5-ex 1.5.2-dev -0,518.85,1800.61,5345280,1041021,19.48,/mnt/IA_LAB/agentes/FLZMA2/silesia/xml
 lz5-ex 1.5.2-dev -1,752.14,2184.10,5345280,1243884,23.27,/mnt/IA_LAB/agentes/FLZMA2/silesia/xml
-lz5-ex 1.5.2-dev -2,675.58,2152.79,5345280,1115832,20.88,/mnt/IA_LAB/agentes/FLZMA2/silesia/xml
+lz5-ex 1.5.2-dev -2,636.38,1958.48,5345280,1130758,21.15,/mnt/IA_LAB/agentes/FLZMA2/silesia/xml
 lz5-ex 1.5.2-dev -3,574.77,1886.27,5345280,1091047,20.41,/mnt/IA_LAB/agentes/FLZMA2/silesia/xml
 lz5-ex 1.5.2-dev -4,362.86,2165.29,5345280,864754,16.18,/mnt/IA_LAB/agentes/FLZMA2/silesia/xml
 lz5-ex 1.5.2-dev -5,324.69,2164.42,5345280,852233,15.94,/mnt/IA_LAB/agentes/FLZMA2/silesia/xml
@@ -204,7 +204,7 @@ zlib 1.3.2 -9,28.09,648.02,5345280,658905,12.33,/mnt/IA_LAB/agentes/FLZMA2/siles
 lizard 2.1 -20,568.51,2119.63,5345280,1094654,20.48,/mnt/IA_LAB/agentes/FLZMA2/silesia/xml
 lz5-ex 1.5.2-dev -0,146.58,1474.26,7251944,6140252,84.67,/mnt/IA_LAB/agentes/FLZMA2/silesia/sao
 lz5-ex 1.5.2-dev -1,1056.42,6415.40,7251944,7052040,97.24,/mnt/IA_LAB/agentes/FLZMA2/silesia/sao
-lz5-ex 1.5.2-dev -2,502.15,4792.55,7251944,6935467,95.64,/mnt/IA_LAB/agentes/FLZMA2/silesia/sao
+lz5-ex 1.5.2-dev -2,600.89,4025.15,7251944,6885482,94.95,/mnt/IA_LAB/agentes/FLZMA2/silesia/sao
 lz5-ex 1.5.2-dev -3,267.50,2143.82,7251944,6592392,90.91,/mnt/IA_LAB/agentes/FLZMA2/silesia/sao
 lz5-ex 1.5.2-dev -4,132.98,1107.86,7251944,6147282,84.77,/mnt/IA_LAB/agentes/FLZMA2/silesia/sao
 lz5-ex 1.5.2-dev -5,91.44,1126.42,7251944,6086578,83.93,/mnt/IA_LAB/agentes/FLZMA2/silesia/sao
@@ -233,7 +233,7 @@ zlib 1.3.2 -9,13.62,243.57,7251944,5325920,73.44,/mnt/IA_LAB/agentes/FLZMA2/sile
 lizard 2.1 -20,216.56,2120.07,7251944,6457355,89.04,/mnt/IA_LAB/agentes/FLZMA2/silesia/sao
 lz5-ex 1.5.2-dev -0,178.90,963.06,6152192,3809697,61.92,/mnt/IA_LAB/agentes/FLZMA2/silesia/ooffice
 lz5-ex 1.5.2-dev -1,772.32,2937.50,6152192,5082973,82.62,/mnt/IA_LAB/agentes/FLZMA2/silesia/ooffice
-lz5-ex 1.5.2-dev -2,422.79,1941.66,6152192,4586812,74.56,/mnt/IA_LAB/agentes/FLZMA2/silesia/ooffice
+lz5-ex 1.5.2-dev -2,478.23,1786.14,6152192,4637697,75.38,/mnt/IA_LAB/agentes/FLZMA2/silesia/ooffice
 lz5-ex 1.5.2-dev -3,280.18,1240.64,6152192,4123335,67.02,/mnt/IA_LAB/agentes/FLZMA2/silesia/ooffice
 lz5-ex 1.5.2-dev -4,154.40,915.28,6152192,3561627,57.89,/mnt/IA_LAB/agentes/FLZMA2/silesia/ooffice
 lz5-ex 1.5.2-dev -5,107.05,861.37,6152192,3500926,56.91,/mnt/IA_LAB/agentes/FLZMA2/silesia/ooffice
@@ -262,7 +262,7 @@ zlib 1.3.2 -9,11.57,217.10,6152192,3092926,50.27,/mnt/IA_LAB/agentes/FLZMA2/sile
 lizard 2.1 -20,250.27,1532.94,6152192,4198234,68.24,/mnt/IA_LAB/agentes/FLZMA2/silesia/ooffice
 lz5-ex 1.5.2-dev -0,164.10,930.24,10192446,5322533,52.22,/mnt/IA_LAB/agentes/FLZMA2/silesia/dickens
 lz5-ex 1.5.2-dev -1,554.26,1719.82,10192446,8375453,82.17,/mnt/IA_LAB/agentes/FLZMA2/silesia/dickens
-lz5-ex 1.5.2-dev -2,323.44,1395.48,10192446,7156671,70.22,/mnt/IA_LAB/agentes/FLZMA2/silesia/dickens
+lz5-ex 1.5.2-dev -2,323.86,1281.02,10192446,6887113,67.57,/mnt/IA_LAB/agentes/FLZMA2/silesia/dickens
 lz5-ex 1.5.2-dev -3,226.60,1351.43,10192446,5886303,57.75,/mnt/IA_LAB/agentes/FLZMA2/silesia/dickens
 lz5-ex 1.5.2-dev -4,129.11,1077.44,10192446,5307745,52.08,/mnt/IA_LAB/agentes/FLZMA2/silesia/dickens
 lz5-ex 1.5.2-dev -5,112.00,1015.18,10192446,5230059,51.31,/mnt/IA_LAB/agentes/FLZMA2/silesia/dickens
@@ -291,7 +291,7 @@ zlib 1.3.2 -9,11.81,280.36,10192446,3854735,37.82,/mnt/IA_LAB/agentes/FLZMA2/sil
 lizard 2.1 -20,213.72,1363.22,10192446,5687425,55.80,/mnt/IA_LAB/agentes/FLZMA2/silesia/dickens
 lz5-ex 1.5.2-dev -0,234.49,1101.38,51220480,23037105,44.98,/mnt/IA_LAB/agentes/FLZMA2/silesia/mozilla
 lz5-ex 1.5.2-dev -1,532.85,1677.82,51220480,28058932,54.78,/mnt/IA_LAB/agentes/FLZMA2/silesia/mozilla
-lz5-ex 1.5.2-dev -2,447.26,1609.67,51220480,26088930,50.93,/mnt/IA_LAB/agentes/FLZMA2/silesia/mozilla
+lz5-ex 1.5.2-dev -2,467.49,1491.43,51220480,26173704,51.10,/mnt/IA_LAB/agentes/FLZMA2/silesia/mozilla
 lz5-ex 1.5.2-dev -3,362.40,1432.52,51220480,24534607,47.90,/mnt/IA_LAB/agentes/FLZMA2/silesia/mozilla
 lz5-ex 1.5.2-dev -4,207.92,1244.56,51220480,21387104,41.75,/mnt/IA_LAB/agentes/FLZMA2/silesia/mozilla
 lz5-ex 1.5.2-dev -5,145.31,1136.09,51220480,21068164,41.13,/mnt/IA_LAB/agentes/FLZMA2/silesia/mozilla
@@ -320,7 +320,7 @@ zlib 1.3.2 -9,6.84,300.93,51220480,19044396,37.18,/mnt/IA_LAB/agentes/FLZMA2/sil
 lizard 2.1 -20,321.72,1731.89,51220480,26281216,51.31,/mnt/IA_LAB/agentes/FLZMA2/silesia/mozilla
 lz5-ex 1.5.2-dev -0,252.10,1589.88,10085684,4528860,44.90,/mnt/IA_LAB/agentes/FLZMA2/silesia/osdb
 lz5-ex 1.5.2-dev -1,614.62,2233.90,10085684,5727179,56.79,/mnt/IA_LAB/agentes/FLZMA2/silesia/osdb
-lz5-ex 1.5.2-dev -2,445.00,2239.82,10085684,5225774,51.81,/mnt/IA_LAB/agentes/FLZMA2/silesia/osdb
+lz5-ex 1.5.2-dev -2,486.57,2052.59,10085684,5044196,50.01,/mnt/IA_LAB/agentes/FLZMA2/silesia/osdb
 lz5-ex 1.5.2-dev -3,356.42,2111.14,10085684,4814217,47.73,/mnt/IA_LAB/agentes/FLZMA2/silesia/osdb
 lz5-ex 1.5.2-dev -4,219.57,1774.72,10085684,4556663,45.18,/mnt/IA_LAB/agentes/FLZMA2/silesia/osdb
 lz5-ex 1.5.2-dev -5,168.47,1686.76,10085684,4398969,43.62,/mnt/IA_LAB/agentes/FLZMA2/silesia/osdb

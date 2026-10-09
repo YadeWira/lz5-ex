@@ -9,13 +9,26 @@ Compression:
   Both are now smaller than 1.5.0 on both corpora - Silesia -0.75% and -2.49%,
   mixed -0.22% and -0.71%. At -4 no file of either corpus is larger than with
   1.5.0.
+- level 2: also back on 1.5.0's parameters (search step 2, minimum match 6).
+  1.5.1's row was smaller than 1.5.0 overall, but 73 of the 210 mixed files came
+  out larger, up to +9.0%; now 55 do, up to +2.7%. Silesia is 1.7% smaller than
+  1.5.0 (was 1.2%) and compresses faster than with 1.5.1's row (+11% over
+  1.5.0, was +5%), but decompresses slower than with it (+15% over 1.5.0, was
+  +25%). The mixed corpus is 0.46%
+  smaller than 1.5.0 (was 1.28%).
 - levels 4-5: the price_fast parser has compile-time copies for the two levels'
   parameters, and LZ5HC_encodeSequence (levels 4-15) replaces its two exact
   output checks with one cheap bound per sequence, falling back to the exact
   checks near the end of the buffer. Output is byte-identical.
 Full Silesia against LZ5 1.5.0, interleaved level by level, three rounds: every
-level compresses 3-20% faster (-3 +8%, -4 +7%, -5 +20%) and decompresses 22-87%
+level compresses 3-20% faster (-3 +8%, -4 +7%, -5 +20%) and decompresses 15-87%
 faster. See the table in README.md.
+
+Portability:
+- tested on Linux ARM64 (static aarch64 build under qemu) and 32-bit x86: the
+  tests/ suite and the LZ5 1.5.0 interop test pass on both, and streams from
+  x86-64, ARM64 and i386 decode on each of the others. At -0 the 32-bit build
+  writes different (equally valid) streams than the 64-bit ones, as 1.5.0 does.
 
 lz5-ex v1.5.1 (first lz5-ex release)
 The first release of lz5-ex, the extended line of LZ5. The API, the header names
