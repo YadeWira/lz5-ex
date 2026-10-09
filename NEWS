@@ -1,3 +1,22 @@
+lz5-ex v1.5.2 (in development)
+Maintenance release.
+
+Compression:
+- levels 3 and 4: 1.5.1 beat LZ5 1.5.0 at every level on Silesia, but on a mixed
+  corpus (210 files: audio, documents, executables, images, music, text, random;
+  212 MB) -3 and -4 came out 0.22% and 0.80% larger than 1.5.0. -3 goes back to
+  1.5.0's own parameters (hashLog 13, minimum match 5) and -4 back to hashLog 14.
+  Both are now smaller than 1.5.0 on both corpora - Silesia -0.75% and -2.49%,
+  mixed -0.22% and -0.71%. At -4 no file of either corpus is larger than with
+  1.5.0.
+- levels 4-5: the price_fast parser has compile-time copies for the two levels'
+  parameters, and LZ5HC_encodeSequence (levels 4-15) replaces its two exact
+  output checks with one cheap bound per sequence, falling back to the exact
+  checks near the end of the buffer. Output is byte-identical.
+Full Silesia against LZ5 1.5.0, interleaved level by level, three rounds: every
+level compresses 3-20% faster (-3 +8%, -4 +7%, -5 +20%) and decompresses 22-87%
+faster. See the table in README.md.
+
 lz5-ex v1.5.1 (first lz5-ex release)
 The first release of lz5-ex, the extended line of LZ5. The API, the header names
 and the block and frame formats are unchanged: streams from lz5-ex decode with
