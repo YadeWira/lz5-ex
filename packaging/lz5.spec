@@ -1,4 +1,4 @@
-# lz5.spec - RPM spec for the LZ5 1.5.1 maintenance line
+# lz5.spec - RPM spec for the LZ5 1.5.x maintenance line
 #
 # Build with:  rpmbuild -ba lz5.spec
 #
@@ -8,7 +8,7 @@
 #   liblz5-devel  headers + pkg-config       (BSD)
 
 Name:           lz5
-Version:        1.5.1
+Version:        1.5.2
 Release:        1%{?dist}
 Summary:        Fast and efficient LZ5 compression library
 
@@ -71,6 +71,10 @@ make -C programs DESTDIR=%{buildroot} PREFIX=/usr install
 %{_includedir}/lz5*.h
 
 %changelog
+* Fri Oct 09 2026 LZ5 maintainers <lz5@example.org> - 1.5.2-1
+- Maintenance release: levels 2-4 retuned for mixed data (2 and 3 back on LZ5
+  1.5.0's parameters), faster levels 4-5. See NEWS.
+
 * Mon Sep 28 2026 LZ5 maintainers <lz5@example.org> - 1.5.1-1
 - Maintenance release of the 1.5.x line. See the NEWS file for the full list
   of fixes; the notable ones are the uninitialised high-compression tables and

@@ -55,7 +55,7 @@ Benchmarks
 -------------------------
 
 <!-- TABLE -->
-Current `main` (1.5.2 in development) on the
+lz5-ex 1.5.2 on the
 [Silesia corpus](http://sun.aei.polsl.pl/~sdeor/index.php?page=silesia) (211,938,580
 bytes), [lzbench](https://github.com/inikep/lzbench) 2.4.1, one core of an Intel Xeon
 E5-2697A v4 @ 2.60 GHz, GCC 14.2.0. LZ5 1.5.0 was measured in the same harness,
