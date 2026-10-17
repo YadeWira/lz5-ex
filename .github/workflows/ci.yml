@@ -132,6 +132,6 @@ jobs:
       - name: Round-trip
         shell: cmd
         run: |
-          cd projects\VS2010\x64\Release
+          cd projects\VS2010\bin\x64\Release
           datagen.exe -g4M | lz5.exe -9 | lz5.exe -t
           datagen.exe -g1M -P99 | lz5.exe -12 | lz5.exe -t
