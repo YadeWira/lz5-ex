@@ -121,12 +121,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ilammy/msvc-dev-cmd@v1
+      # The projects ask for the VS2010 toolset (v100), which the runner lacks;
+      # build them with the installed one instead.
       - name: Build
         shell: cmd
-        run: msbuild projects\VS2010\lz5.sln /p:Configuration=Release /p:Platform=x64 /v:minimal
+        run: msbuild projects\VS2010\lz5.sln /p:Configuration=Release /p:Platform=x64 /p:PlatformToolset=v145 /v:minimal
       - name: Build (Win32)
         shell: cmd
-        run: msbuild projects\VS2010\lz5.sln /p:Configuration=Release /p:Platform=Win32 /v:minimal
+        run: msbuild projects\VS2010\lz5.sln /p:Configuration=Release /p:Platform=Win32 /p:PlatformToolset=v145 /v:minimal
       - name: Round-trip
         shell: cmd
         run: |
