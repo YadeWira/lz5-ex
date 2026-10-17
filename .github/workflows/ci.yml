@@ -40,7 +40,7 @@ jobs:
             makeflags: 'MOREFLAGS="-g -fsanitize=address,undefined -fno-omit-frame-pointer"'
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install valgrind
         if: runner.os == 'Linux'
@@ -81,7 +81,7 @@ jobs:
           - arch: x86_64
             os: macos-15-intel
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Build
         run: make clean && make CC=clang
@@ -115,7 +115,7 @@ jobs:
     name: valgrind
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install valgrind
         run: sudo apt-get update && sudo apt-get install -y valgrind
       - name: Build
@@ -135,7 +135,7 @@ jobs:
     name: poisoned heap (MALLOC_PERTURB_)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Build
         run: make clean && make
       - name: Compression with non-zeroed heap
@@ -157,7 +157,7 @@ jobs:
     name: msvc (windows)
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ilammy/msvc-dev-cmd@v1
       # The projects ask for the VS2010 toolset (v100), which the runner lacks;
       # build them with the installed one instead.
