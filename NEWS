@@ -1,3 +1,37 @@
+lz5-ex v1.5.3 (in development)
+Maintenance release.
+
+Library:
+- lz5frame.c: built with current MSVC for x64 (14.51, /O1 or /O2), LZ5F_decompress
+  took every stored (uncompressed) block for a compressed one and failed with
+  ERROR_decompressionFailed, so the Windows x64 program could not decompress
+  incompressible data. LZ5 1.5.0 built the same way fails the same way; /Od,
+  /Ob0, ClangCL, Win32, gcc and clang were fine. The block header is now read
+  once into a local; the bug no longer shows up with any of those builds.
+  The format and the output are unchanged.
+
+Command line (both defects are inherited from LZ5 1.5.0; the format is unchanged):
+- -t / --test reported "Successfully decoded" and exit code 0 for a file that is
+  not lz5 at all: -t turns on overwrite, and overwrite also turns on the
+  pass-through that copies non-lz5 data unchanged (meant for -df). A test now
+  rejects such a file (error 44). -df still copies it through.
+- the output name 'null' failed with -q ("Operation aborted : /dev/null already
+  exists") and asked "Overwrite ? (Y/n)" otherwise: lz5io.c compared the name
+  with its own copy of nulmark by pointer. It is now compared with strcmp.
+- tests/test_cli.sh checks every option of the program (164 checks: levels,
+  -z/-d/-t/-c/-f/-k/-v/-q/-m/-B#/-b/-i#/-p, the long forms, the frame flags,
+  sparse files, the overwrite question, stdin/stdout/null, grouped options and,
+  on Linux, the console guard). LZ5 1.5.0 fails 4 of them, the two defects above.
+
+Build and CI:
+- GitHub Actions is on. CI adds macOS (Apple Silicon and Intel: tests, the LZ5
+  1.5.0 interop test, ASan+UBSan), fixes the MSVC job for current runners, and
+  runs tests/test_cli.sh on Linux, macOS and Windows.
+- .github/workflows/release.yml builds the program for Linux (x86_64, i386,
+  arm64; static), macOS (arm64, x86_64) and Windows (x64, x86; static CRT),
+  checks each binary with tests/test_cli.sh, and attaches the archives and
+  SHA256SUMS to every published release.
+
 lz5-ex v1.5.2
 Maintenance release.
 

@@ -1,0 +1,159 @@
+name: Release binaries
+
+# Builds the lz5 program for every supported system, checks each binary with
+# tests/test_cli.sh, and attaches the archives and SHA256SUMS to the release.
+#
+#   release published   build the release's tag and attach to it
+#   workflow_dispatch   build a given tag; attach only if 'upload' is set
+#   push of this file   dry run: build and test, keep the archives as artifacts
+
+on:
+  release:
+    types: [ published ]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to build (for example v1.5.3)'
+        required: true
+      upload:
+        description: 'Attach the archives to that release'
+        type: boolean
+        default: false
+  push:
+    paths: [ '.github/workflows/release.yml' ]
+
+permissions:
+  contents: write
+
+env:
+  REF: ${{ github.event.release.tag_name || inputs.tag || github.sha }}
+
+jobs:
+  unix:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: linux-x86_64
+            os: ubuntu-latest
+            flags: 'LDFLAGS=-static'
+          - name: linux-i386
+            os: ubuntu-latest
+            flags: 'LDFLAGS=-static CC="gcc -m32"'
+            packages: gcc-multilib
+          - name: linux-arm64
+            os: ubuntu-24.04-arm
+            flags: 'LDFLAGS=-static'
+          - name: macos-arm64
+            os: macos-latest
+            flags: 'CC="clang -mmacosx-version-min=11.0"'
+          - name: macos-x86_64
+            os: macos-15-intel
+            flags: 'CC="clang -mmacosx-version-min=10.13"'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.REF }}
+          # tests/test_cli.sh comes from this commit, so older tags are checked too
+          path: src
+      - uses: actions/checkout@v7
+        with:
+          path: current
+
+      - name: Install packages
+        if: matrix.packages
+        run: sudo apt-get update && sudo apt-get install -y ${{ matrix.packages }}
+
+      - name: Build
+        run: make -C src/programs lz5 ${{ matrix.flags }}
+
+      - name: Check every option
+        run: |
+          file src/programs/lz5
+          bash current/tests/test_cli.sh src/programs/lz5
+
+      - name: Package
+        run: |
+          ver=$(sed -n 's/^#define LZ5_VERSION *"v\(.*\)"/\1/p' src/lib/lz5.h)
+          d=lz5-ex-$ver-${{ matrix.name }}
+          mkdir $d
+          cp src/programs/lz5 src/programs/lz5.1 src/README.md src/NEWS $d/
+          cp src/lib/LICENSE $d/LICENSE-lib; cp src/programs/COPYING $d/COPYING-programs
+          tar czf $d.tar.gz $d
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.name }}
+          path: lz5-ex-*.tar.gz
+
+  windows:
+    name: windows-${{ matrix.arch }}
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            platform: x64
+          - arch: x86
+            platform: Win32
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.REF }}
+          path: src
+      - uses: actions/checkout@v7
+        with:
+          path: current
+      - uses: ilammy/msvc-dev-cmd@v1
+
+      # The projects ask for the VS2010 toolset (v100); build with the installed one.
+      # They link the C runtime statically (/MT), so lz5.exe needs no redistributable.
+      - name: Build
+        shell: cmd
+        run: msbuild src\projects\VS2010\lz5\lz5.vcxproj /p:Configuration=Release /p:Platform=${{ matrix.platform }} /p:PlatformToolset=v145 /p:SolutionDir=%CD%\src\projects\VS2010\ /v:minimal
+
+      - name: Check every option
+        shell: bash
+        run: bash current/tests/test_cli.sh src/projects/VS2010/bin/${{ matrix.platform }}/Release/lz5.exe
+
+      - name: Package
+        shell: bash
+        run: |
+          ver=$(sed -n 's/^#define LZ5_VERSION *"v\(.*\)"/\1/p' src/lib/lz5.h | tr -d '\r')
+          d=lz5-ex-$ver-windows-${{ matrix.arch }}
+          mkdir $d
+          cp src/projects/VS2010/bin/${{ matrix.platform }}/Release/lz5.exe src/README.md src/NEWS $d/
+          cp src/lib/LICENSE $d/LICENSE-lib.txt; cp src/programs/COPYING $d/COPYING-programs.txt
+          7z a -tzip $d.zip $d > /dev/null
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-${{ matrix.arch }}
+          path: lz5-ex-*.zip
+
+  attach:
+    name: checksums and upload
+    needs: [ unix, windows ]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: SHA256SUMS
+        run: cd dist && sha256sum lz5-ex-* > SHA256SUMS && cat SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: all-binaries
+          path: dist/*
+
+      - name: Attach to the release
+        if: github.event_name == 'release' || inputs.upload
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$REF" dist/* --clobber -R "$GITHUB_REPOSITORY"

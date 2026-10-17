@@ -66,6 +66,9 @@ jobs:
           ./fullbench --no-prompt -i1 ../lib/lz5.c
           ./frametest -i64
 
+      - name: Every command line option
+        run: tests/test_cli.sh programs/lz5
+
       - name: Regression tests (HC tables, linked-block streaming, decoder fuzz)
         run: make -C tests test CC=${{ matrix.cc }} ${{ matrix.makeflags }}
 
@@ -95,6 +98,9 @@ jobs:
           make test-lz5-multiple test-lz5-contentSize test-lz5-frame-concatenation test-lz5-sparse CC=clang
           ./fullbench --no-prompt -i1 ../lib/lz5.c
           ./frametest -i64
+
+      - name: Every command line option
+        run: tests/test_cli.sh programs/lz5
 
       - name: Regression tests
         run: make -C tests test CC=clang
@@ -173,3 +179,6 @@ jobs:
           cd projects\VS2010\bin\x64\Release
           datagen.exe -g4M | lz5.exe -9 | lz5.exe -t
           datagen.exe -g1M -P99 | lz5.exe -12 | lz5.exe -t
+      - name: Every command line option
+        shell: bash
+        run: bash tests/test_cli.sh projects/VS2010/bin/x64/Release/lz5.exe

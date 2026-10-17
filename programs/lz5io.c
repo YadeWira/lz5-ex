@@ -136,6 +136,7 @@ static int g_streamChecksum = 1;
 static int g_blockIndependence = 1;
 static int g_sparseFileSupport = 1;
 static int g_contentSizeFlag = 0;
+static int g_testOnly = 0;   /* output is nulmark: -t, or 'null' */
 
 static const int minBlockSizeID = 1;
 static const int maxBlockSizeID = 7;
@@ -291,7 +292,8 @@ static int LZ5IO_getFiles(const char* input_filename, const char* output_filenam
     {
         /* Check if destination file already exists */
         *pfoutput=0;
-        if (output_filename != nulmark) *pfoutput = fopen( output_filename, "rb" );
+        /* strcmp, not a pointer compare: lz5cli.c and lz5io.c each have their own nulmark */
+        if (strcmp(output_filename, nulmark)) *pfoutput = fopen( output_filename, "rb" );
         if (*pfoutput!=0)
         {
             fclose(*pfoutput);
@@ -811,7 +813,8 @@ static unsigned long long selectDecoder(dRess_t ress, FILE* finput, FILE* foutpu
     default:
         if (nbCalls == 1)   /* just started */
         {
-            if (g_overwrite)
+            /* -f copies data that is not lz5 through unchanged, but a test must not pass it */
+            if (g_overwrite && !g_testOnly)
                 return LZ5IO_passThrough(finput, foutput, MNstore);
             EXM_THROW(44,"Unrecognized header : file cannot be decoded");   /* Wrong magic number at the beginning of 1st stream */
         }
@@ -834,6 +837,7 @@ static int LZ5IO_decompressFile_extRess(dRess_t ress, const char* input_filename
 
     /* sparse file */
     if (g_sparseFileSupport) { SET_SPARSE_FILE_MODE(foutput); }
+    g_testOnly = !strcmp(output_filename, nulmark);
 
     /* Loop over multiple streams */
     do
