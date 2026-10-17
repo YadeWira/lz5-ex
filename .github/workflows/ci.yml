@@ -38,10 +38,6 @@ jobs:
             os: ubuntu-latest
             cc: gcc
             makeflags: 'MOREFLAGS="-g -fsanitize=address,undefined -fno-omit-frame-pointer"'
-          - name: macOS (clang)
-            os: macos-latest
-            cc: clang
-            makeflags: ''
 
     steps:
       - uses: actions/checkout@v4
@@ -72,6 +68,48 @@ jobs:
 
       - name: Regression tests (HC tables, linked-block streaming, decoder fuzz)
         run: make -C tests test CC=${{ matrix.cc }} ${{ matrix.makeflags }}
+
+  macos:
+    name: macOS ${{ matrix.arch }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: arm64
+            os: macos-latest
+          - arch: x86_64
+            os: macos-15-intel
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build
+        run: make clean && make CC=clang
+
+      - name: Test suite (excluding the 6 GB cases)
+        run: |
+          cd programs
+          make lz5 datagen fullbench frametest CC=clang
+          ./datagen -g4M | ./lz5 -9 | ./lz5 -t
+          ./datagen -g1M -P99 | ./lz5 -12 | ./lz5 -t
+          make test-lz5-multiple test-lz5-contentSize test-lz5-frame-concatenation test-lz5-sparse CC=clang
+          ./fullbench --no-prompt -i1 ../lib/lz5.c
+          ./frametest -i64
+
+      - name: Regression tests
+        run: make -C tests test CC=clang
+
+      # The project rule: every stream must decode with LZ5 1.5.0 and back.
+      - name: Interoperability with LZ5 1.5.0
+        run: |
+          git clone -q --depth 1 --branch v1.5 https://github.com/inikep/lz5 ../lz5-1.5.0
+          make -C ../lz5-1.5.0/programs lz5 CC=clang
+          tests/test_compat_lz5_15.sh ../lz5-1.5.0/programs/lz5
+
+      - name: ASan+UBSan regression tests
+        run: |
+          make -C tests clean
+          make -C tests test CC=clang MOREFLAGS="-g -fsanitize=address,undefined -fno-omit-frame-pointer"
 
   valgrind:
     name: valgrind
