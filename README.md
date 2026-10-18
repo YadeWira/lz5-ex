@@ -11,6 +11,8 @@ faster, with the original API and the original block and frame formats unchanged
   smaller output, faster decompression and faster compression (table below).
 - **Safer.** Buffer overruns and over-reads inherited from 1.5.0 are fixed and covered
   by tests (`tests/`).
+- **Ready-made binaries** for Linux, macOS and Windows on the [releases] page, each
+  checked by CI before it is attached.
 
 | Component | Status |
 |-----------|--------|
@@ -22,6 +24,7 @@ levels][wCL], [library API][wAPI], [compatibility][wCompat], [benchmarks][wBench
 [`NEWS`](NEWS).
 
 [LZ5]: https://github.com/inikep/lz5
+[releases]: https://github.com/YadeWira/lz5-ex/releases
 [ciBadge]: https://github.com/YadeWira/lz5-ex/actions/workflows/ci.yml/badge.svg "Continuous Integration"
 [ciLink]: https://github.com/YadeWira/lz5-ex/actions/workflows/ci.yml
 [wiki]: https://github.com/YadeWira/lz5-ex/wiki
