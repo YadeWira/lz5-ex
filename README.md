@@ -58,32 +58,46 @@ Benchmarks
 -------------------------
 
 <!-- TABLE -->
-lz5-ex 1.5.2 on the
-[Silesia corpus](http://sun.aei.polsl.pl/~sdeor/index.php?page=silesia) (211,938,580
-bytes), [lzbench](https://github.com/inikep/lzbench) 2.4.1, one core of an Intel Xeon
-E5-2697A v4 @ 2.60 GHz, GCC 14.2.0. LZ5 1.5.0 was measured in the same harness,
-interleaved with lz5-ex level by level (three rounds, median speed). `Ratio` is the
-compressed size as a percentage of the original, so lower is better; the last three
-columns are lz5-ex's change against 1.5.0 (smaller output, faster speed).
+How small lz5-ex's output is and how fast it runs at each level, and how that compares
+with the original LZ5 1.5.0. From `-1` to `-15`, each level makes smaller files and
+compresses more slowly; `-1` is the fastest and `-15` the smallest. `-0`, the default,
+is a separate fast mode that lands between `-3` and `-4` in size. Decompression stays
+fast at every level.
 
-| Level | Ratio | Compression | Decompression | vs 1.5.0: size | compression | decompression |
-| ----- | ----: | ----------: | ------------: | -------------: | ----------: | ------------: |
-| `-0` | 41.62% | 231.9 MB/s | 1103 MB/s | same | +3% | +64% |
-| `-1` | 53.42% | 590.2 MB/s | 1866 MB/s | -0.3% | +14% | +22% |
-| `-2` | 48.29% | 448.3 MB/s | 1567 MB/s | -1.7% | +11% | +15% |
-| `-3` | 44.76% | 343.8 MB/s | 1518 MB/s | -0.7% | +8% | +28% |
-| `-4` | 39.80% | 187.1 MB/s | 1245 MB/s | -2.5% | +7% | +29% |
-| `-5` | 39.11% | 145.7 MB/s | 1174 MB/s | -1.9% | +20% | +51% |
-| `-6` | 37.05% | 55.0 MB/s | 1296 MB/s | -2.5% | +12% | +36% |
-| `-7` | 36.30% | 49.9 MB/s | 1261 MB/s | -2.4% | +9% | +38% |
-| `-8` | 35.95% | 45.2 MB/s | 1240 MB/s | -2.3% | +9% | +48% |
-| `-9` | 34.32% | 28.3 MB/s | 1238 MB/s | -2.0% | +5% | +54% |
-| `-10` | 33.45% | 21.1 MB/s | 1280 MB/s | -1.9% | +6% | +67% |
-| `-11` | 33.45% | 15.5 MB/s | 1190 MB/s | -0.2% | +4% | +55% |
-| `-12` | 32.79% | 11.7 MB/s | 1203 MB/s | same | +5% | +57% |
-| `-13` | 32.12% | 6.9 MB/s | 1260 MB/s | same | +7% | +68% |
-| `-14` | 31.11% | 4.8 MB/s | 1330 MB/s | same | +6% | +87% |
-| `-15` | 30.95% | 2.2 MB/s | 1330 MB/s | same | +5% | +87% |
+|  | lz5-ex | | | compared with LZ5 1.5.0 | | |
+| :---- | ---: | ---: | ---: | ---: | ---: | ---: |
+| **Level** | **Size** | **Compression** | **Decompression** | **Size** | **Compression** | **Decompression** |
+| `-0` (default) | 41.62% | 232 MB/s | 1103 MB/s | same | 3% faster | 64% faster |
+| `-1` | 53.42% | 590 MB/s | 1866 MB/s | 0.3% smaller | 14% faster | 22% faster |
+| `-2` | 48.29% | 448 MB/s | 1567 MB/s | 1.7% smaller | 11% faster | 15% faster |
+| `-3` | 44.76% | 344 MB/s | 1518 MB/s | 0.7% smaller | 8% faster | 28% faster |
+| `-4` | 39.80% | 187 MB/s | 1245 MB/s | 2.5% smaller | 7% faster | 29% faster |
+| `-5` | 39.11% | 146 MB/s | 1174 MB/s | 1.9% smaller | 20% faster | 51% faster |
+| `-6` | 37.05% | 55 MB/s | 1296 MB/s | 2.5% smaller | 12% faster | 36% faster |
+| `-7` | 36.30% | 50 MB/s | 1261 MB/s | 2.4% smaller | 9% faster | 38% faster |
+| `-8` | 35.95% | 45 MB/s | 1240 MB/s | 2.3% smaller | 9% faster | 48% faster |
+| `-9` | 34.32% | 28 MB/s | 1238 MB/s | 2.0% smaller | 5% faster | 54% faster |
+| `-10` | 33.45% | 21 MB/s | 1280 MB/s | 1.9% smaller | 6% faster | 67% faster |
+| `-11` | 33.45% | 16 MB/s | 1190 MB/s | 0.2% smaller | 4% faster | 55% faster |
+| `-12` | 32.79% | 12 MB/s | 1203 MB/s | same | 5% faster | 57% faster |
+| `-13` | 32.12% | 6.9 MB/s | 1260 MB/s | same | 7% faster | 68% faster |
+| `-14` | 31.11% | 4.8 MB/s | 1330 MB/s | same | 6% faster | 87% faster |
+| `-15` | 30.95% | 2.2 MB/s | 1330 MB/s | same | 5% faster | 87% faster |
+
+How to read it:
+- **Size** is the compressed size as a percentage of the original: 41.62% means a
+  100 MB input becomes 41.6 MB. Lower is better.
+- **Compression** and **decompression** are speeds in MB of original data per second,
+  on one core. Higher is better.
+- The last three columns compare lz5-ex with LZ5 1.5.0 at the same level: "same" means
+  identical size; "2.5% smaller" or "64% faster" are lz5-ex's gains.
+
+Measured on the [Silesia corpus](http://sun.aei.polsl.pl/~sdeor/index.php?page=silesia)
+(211,938,580 bytes of mixed files) with [lzbench](https://github.com/inikep/lzbench)
+2.4.1, one core of an Intel Xeon E5-2697A v4 @ 2.60 GHz, GCC 14.2.0. LZ5 1.5.0 ran in
+the same harness, interleaved with lz5-ex level by level (three rounds, median speed).
+The figures are from lz5-ex 1.5.2; 1.5.3 did not change the compressor or the decoder
+loop, so they still apply.
 
 The other compressors (zstd, lz4, brotli, xz, ...), the per-level 1.5.0 figures and how
 to reproduce the runs are on the wiki's [benchmarks][wBench] page.
