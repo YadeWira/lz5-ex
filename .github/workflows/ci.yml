@@ -132,10 +132,11 @@ jobs:
           make lz5 datagen frametest fullbench
           ./datagen -g16KB > tmp
           valgrind --leak-check=yes --error-exitcode=1 ./lz5 -9 -B -f tmp /dev/null
-          valgrind --leak-check=yes --error-exitcode=1 ./lz5 -t tmp
+          valgrind --leak-check=yes --error-exitcode=1 ./lz5 -9 -f tmp tmp.lz5
+          valgrind --leak-check=yes --error-exitcode=1 ./lz5 -t tmp.lz5
           valgrind --leak-check=yes --error-exitcode=1 ./fullbench -i1 tmp
           valgrind --leak-check=yes --error-exitcode=1 ./frametest -i64
-          rm -f tmp
+          rm -f tmp tmp.lz5
 
   poisoned-heap:
     name: poisoned heap (MALLOC_PERTURB_)
