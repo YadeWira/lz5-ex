@@ -21,9 +21,10 @@ Command line (both defects are inherited from LZ5 1.5.0; the format is unchanged
   under ASan, garbage otherwise). They now stop with "-m needs at least one file
   name".
 - a skippable frame read from a pipe failed with error 43, "cannot skip skippable
-  area": it was skipped with fseek(), which a pipe does not support. It is now
-  read and dropped when seeking fails, and sizes above 2 GB are no longer passed
-  to fseek(), whose long is 32 bits on Windows.
+  area": it was skipped with fseek(), which a pipe does not support (on Windows
+  MSVC's fseek() even reports success there without skipping). From stdin, and
+  for sizes above 2 GB that fseek()'s 32-bit long on Windows cannot hold, the
+  area is now read and dropped; a file is still skipped with fseek().
 - tests/test_cli.sh has 5 more checks for these (169 in all).
 
 Found by fuzzing (libFuzzer with ASan and UBSan: the block and frame decoders on
