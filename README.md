@@ -15,8 +15,9 @@ faster, with the original API and the original block and frame formats unchanged
   checked by CI before it is attached.
 
 | Component | Status |
-|-----------|--------|
-| CI (Linux/macOS/Windows) | [![CI][ciBadge]][ciLink] |
+|---|---|
+| CI | [![CI][ciBadge]][ciLink] |
+| Latest release | [![Release][relBadge]][relLink] |
 
 **Documentation is in the [wiki]**: [getting started][wGS], [compression
 levels][wCL], [library API][wAPI], [compatibility][wCompat], [benchmarks][wBench],
@@ -27,6 +28,8 @@ levels][wCL], [library API][wAPI], [compatibility][wCompat], [benchmarks][wBench
 [releases]: https://github.com/YadeWira/lz5-ex/releases
 [ciBadge]: https://github.com/YadeWira/lz5-ex/actions/workflows/ci.yml/badge.svg "Continuous Integration"
 [ciLink]: https://github.com/YadeWira/lz5-ex/actions/workflows/ci.yml
+[relBadge]: https://img.shields.io/github/v/release/YadeWira/lz5-ex "Latest release"
+[relLink]: https://github.com/YadeWira/lz5-ex/releases/latest
 [wiki]: https://github.com/YadeWira/lz5-ex/wiki
 [wGS]: https://github.com/YadeWira/lz5-ex/wiki/Getting-Started
 [wCL]: https://github.com/YadeWira/lz5-ex/wiki/Compression-Levels
