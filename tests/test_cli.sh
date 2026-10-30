@@ -158,6 +158,7 @@ refuse "-qq still fails on an error"       "$LZ5" -qq no-such-file v.lz5
 cp text m1; cp rand m2; cp holes m3
 "$LZ5" -q -f -m m1 m2 m3
 check "-m names each output after its input"  sh -c 'test -f m1.lz5 && test -f m2.lz5 && test -f m3.lz5'
+refuse "-m without a file name is an error"    "$LZ5" -q -m
 mkdir mm; mv m1.lz5 m2.lz5 m3.lz5 mm/
 "$LZ5" -q -f -d -m mm/m1.lz5 mm/m2.lz5 mm/m3.lz5
 check "-d -m decompresses each one"           sh -c 'cmp -s mm/m1 m1 && cmp -s mm/m2 m2 && cmp -s mm/m3 m3'
@@ -225,6 +226,12 @@ cat text rand > cat.ref
 check "concatenated frames decode in order"   sh -c '"$0" -d -c cat.lz5 | cmp -s - cat.ref' "$LZ5"
 { printf '\120\052\115\030\004\000\000\000abcd'; cat t.lz5; } > skip.lz5
 check "a skippable frame is skipped"          sh -c '"$0" -d -c skip.lz5 | cmp -s - text' "$LZ5"
+check "... also when read from a pipe"         sh -c 'cat skip.lz5 | "$0" -d -c | cmp -s - text' "$LZ5"
+{ cat t.lz5; printf '\120\052\115\030\004\000\000\000abcd'; cat t.lz5; } > skip2.lz5
+cat text text > skip2.ref
+check "... and between two frames from a pipe" sh -c 'cat skip2.lz5 | "$0" -d -c | cmp -s - skip2.ref' "$LZ5"
+printf '\120\052\115\030\010\000\000\000abc' > skipcut.lz5
+refuse "a cut skippable frame from a pipe is an error" sh -c 'cat skipcut.lz5 | "$0" -q -d -c > /dev/null' "$LZ5"
 
 # --- short options can be grouped ---
 echo old > g.lz5
@@ -237,6 +244,7 @@ check "-tq is -t -q"               "$LZ5" -tq g.lz5
 
 # --- -b -i#: benchmark mode ---
 check "-b benchmarks a file"       sh -c '"$0" -b -i1 text 2>&1 | grep -q "text"' "$LZ5"
+refuse "-b without a file name is an error"  "$LZ5" -q -b -i1
 check "-b takes several files"     sh -c '"$0" -b -i1 text rand 2>&1 | grep -q "rand"' "$LZ5"
 check "-b -9 benchmarks level 9"   sh -c '"$0" -b9 -i1 text >/dev/null 2>&1' "$LZ5"
 check "-p (pause) waits for a key"  sh -c 'echo | "$0" -p -b -i1 text >/dev/null 2>&1' "$LZ5"

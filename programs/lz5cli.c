@@ -433,6 +433,9 @@ int main(int argc, char** argv)
     DISPLAYLEVEL(3, WELCOME_MESSAGE);
     if (!decode) DISPLAYLEVEL(4, "Blocks size : %i KB\n", blockSize>>10);
 
+    /* -m and -b take their files from the command line : there must be one */
+    if (multiple_inputs && (ifnIdx == 0)) { DISPLAYLEVEL(1, "%s needs at least one file name\n", bench ? "-b" : "-m"); badusage(); }
+
     /* No input filename ==> use stdin */
     if (multiple_inputs) input_filename = inFileNames[0], output_filename = (const char*)(inFileNames[0]);
     if(!input_filename) { input_filename=stdinmark; }

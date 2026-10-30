@@ -806,8 +806,18 @@ static unsigned long long selectDecoder(dRess_t ress, FILE* finput, FILE* foutpu
         nbReadBytes = fread(MNstore, 1, 4, finput);
         if (nbReadBytes != 4) EXM_THROW(42, "Stream error : skippable size unreadable");
         size = LZ5IO_readLE32(MNstore);     /* Little Endian format */
-        errorNb = fseek(finput, size, SEEK_CUR);
-        if (errorNb != 0) EXM_THROW(43, "Stream error : cannot skip skippable area");
+        /* fseek() takes a long, 32 bits on Windows : seek only sizes it can hold */
+        errorNb = (size > 0x7FFFFFFFU) ? -1 : fseek(finput, (long)size, SEEK_CUR);
+        if (errorNb != 0)   /* not seekable (a pipe), or too far : read the area and drop it */
+        {
+            while (size > 0)
+            {
+                size_t const toRead = (size > ress.srcBufferSize) ? ress.srcBufferSize : size;
+                if (fread(ress.srcBuffer, 1, toRead, finput) != toRead)
+                    EXM_THROW(43, "Stream error : cannot skip skippable area");
+                size -= (unsigned)toRead;
+            }
+        }
         return selectDecoder(ress, finput, foutput);
     EXTENDED_FORMAT;
     default:
