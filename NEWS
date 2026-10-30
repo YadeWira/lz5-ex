@@ -1,3 +1,9 @@
+lz5-ex v1.5.4 (in development)
+
+Build and CI:
+- macOS on Intel (x86_64) is no longer supported: CI no longer tests it and releases
+  no longer include a macos-x86_64 binary. macOS on Apple Silicon (arm64) stays.
+
 lz5-ex v1.5.3
 Maintenance release.
 

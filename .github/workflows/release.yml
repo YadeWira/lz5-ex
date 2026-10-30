@@ -49,9 +49,6 @@ jobs:
           - name: macos-arm64
             os: macos-latest
             flags: 'CC="clang -mmacosx-version-min=11.0"'
-          - name: macos-x86_64
-            os: macos-15-intel
-            flags: 'CC="clang -mmacosx-version-min=10.13"'
     steps:
       - uses: actions/checkout@v7
         with:
