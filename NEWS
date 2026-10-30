@@ -1,4 +1,5 @@
-lz5-ex v1.5.4 (in development)
+lz5-ex v1.5.4
+Maintenance release.
 
 Library (lz5frame.c; the format and the output of a fresh context are unchanged):
 - a reused compression context compressed every frame at the first frame's

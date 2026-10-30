@@ -99,8 +99,8 @@ Measured on the [Silesia corpus](http://sun.aei.polsl.pl/~sdeor/index.php?page=s
 (211,938,580 bytes of mixed files) with [lzbench](https://github.com/inikep/lzbench)
 2.4.1, one core of an Intel Xeon E5-2697A v4 @ 2.60 GHz, GCC 14.2.0. LZ5 1.5.0 ran in
 the same harness, interleaved with lz5-ex level by level (three rounds, median speed).
-The figures are from lz5-ex 1.5.2; 1.5.3 did not change the compressor or the decoder
-loop, so they still apply.
+The figures are from lz5-ex 1.5.2; 1.5.3 and 1.5.4 did not change the compressor or
+the decoder loop, so they still apply.
 
 The other compressors (zstd, lz4, brotli, xz, ...), the per-level 1.5.0 figures and how
 to reproduce the runs are on the wiki's [benchmarks][wBench] page.
