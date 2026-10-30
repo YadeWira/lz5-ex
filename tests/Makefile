@@ -11,6 +11,8 @@
 #                     each still succeeds there
 #   test_destsize     LZ5_compress_destSize stays within targetDstSize and its
 #                     output decodes to the prefix it reports
+#   test_frame_ctx    a reused LZ5F context compresses each frame at its own
+#                     level, like a fresh one; blockSizeID above 7 is rejected
 
 CC       ?= cc
 CFLAGS   ?= -O2 -std=gnu99
@@ -19,7 +21,7 @@ LZ5DIR   := ../lib
 CPPFLAGS := -I$(LZ5DIR) -DXXH_NAMESPACE=LZ5_
 
 LIB_SRC  := $(LZ5DIR)/lz5.c $(LZ5DIR)/lz5hc.c $(LZ5DIR)/lz5frame.c $(LZ5DIR)/xxhash.c
-TESTS    := test_hc_tables test_stream test_decode_fuzz test_bound test_destsize
+TESTS    := test_hc_tables test_stream test_decode_fuzz test_bound test_destsize test_frame_ctx
 
 .PHONY: all test clean
 
@@ -42,6 +44,7 @@ test: $(TESTS)
 	./test_decode_fuzz
 	./test_bound
 	./test_destsize
+	./test_frame_ctx
 
 clean:
 	rm -f $(TESTS)

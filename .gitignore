@@ -71,3 +71,4 @@ projects/VS2010/*/*.suo
 projects/VS2010/*/*.user
 projects/VS2010/*.suo
 projects/VS2010/*.user
+/tests/test_frame_ctx

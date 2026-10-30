@@ -337,16 +337,17 @@ size_t LZ5F_compressFrame(void* dstBuffer, size_t dstMaxSize, const void* srcBuf
     if (dstMaxSize < LZ5F_compressFrameBound(srcSize, &prefs))
         return (size_t)-LZ5F_ERROR_dstMaxSize_tooSmall;
 
+    /* on an error, free the stream compressBegin created (up to 1.1 GB at level 15) */
     errorCode = LZ5F_compressBegin(&cctxI, dstBuffer, dstMaxSize, &prefs);  /* write header */
-    if (LZ5F_isError(errorCode)) return errorCode;
+    if (LZ5F_isError(errorCode)) { LZ5F_freeStream(&cctxI); return errorCode; }
     dstPtr += errorCode;   /* header size */
 
     errorCode = LZ5F_compressUpdate(&cctxI, dstPtr, dstEnd-dstPtr, srcBuffer, srcSize, &options);
-    if (LZ5F_isError(errorCode)) return errorCode;
+    if (LZ5F_isError(errorCode)) { LZ5F_freeStream(&cctxI); return errorCode; }
     dstPtr += errorCode;
 
     errorCode = LZ5F_compressEnd(&cctxI, dstPtr, dstEnd-dstPtr, &options);   /* flush last block, and generate suffix */
-    if (LZ5F_isError(errorCode)) return errorCode;
+    if (LZ5F_isError(errorCode)) { LZ5F_freeStream(&cctxI); return errorCode; }
     dstPtr += errorCode;
 
     LZ5F_freeStream(&cctxI);
@@ -428,7 +429,10 @@ size_t LZ5F_compressBegin(LZ5F_compressionContext_t compressionContext, void* ds
     {
         U32 tableID = (cctxPtr->prefs.compressionLevel < minHClevel) ? 1 : 2;  /* 0:nothing ; 1:LZ5_createStream ; 2:LZ5_createStreamHC */
       //  printf("BEFORE lz5CtxLevel=%d tableID=%d compressionLevel=%d minHClevel=%d\n", (int)cctxPtr->lz5CtxLevel, (int)tableID, (int)cctxPtr->prefs.compressionLevel, minHClevel);
-        if (cctxPtr->lz5CtxLevel != tableID)
+        /* An HC stream keeps the level it was created for, and its tables: a reused
+         * context would compress at the first frame's level, with leftovers from it.
+         * Start every HC frame on a new stream (calloc'ed, so cheap until touched). */
+        if ((cctxPtr->lz5CtxLevel != tableID) || (tableID == 2))
         {
             LZ5F_freeStream(cctxPtr);
 
@@ -437,12 +441,14 @@ size_t LZ5F_compressBegin(LZ5F_compressionContext_t compressionContext, void* ds
                 cctxPtr->lz5CtxPtr = (void*)LZ5_createStream();
             else
                 cctxPtr->lz5CtxPtr = (void*)LZ5_createStreamHC(cctxPtr->prefs.compressionLevel);
+            if (cctxPtr->lz5CtxPtr == NULL) { cctxPtr->lz5CtxLevel = 0; return (size_t)-LZ5F_ERROR_allocation_failed; }
         }
     }
 
     /* Buffer Management */
     if (cctxPtr->prefs.frameInfo.blockSizeID == 0) cctxPtr->prefs.frameInfo.blockSizeID = LZ5F_BLOCKSIZEID_DEFAULT;
     cctxPtr->maxBlockSize = LZ5F_getBlockSize(cctxPtr->prefs.frameInfo.blockSizeID);
+    if (LZ5F_isError(cctxPtr->maxBlockSize)) return cctxPtr->maxBlockSize;   /* blockSizeID above 7 */
 
     requiredBuffSize = cctxPtr->maxBlockSize + ((cctxPtr->prefs.frameInfo.blockMode == LZ5F_blockLinked) * 2 * LZ5F_DICT_SIZE);
     if (preferencesPtr->autoFlush)
