@@ -45,6 +45,20 @@ FFLAGS   ?= -fomit-frame-pointer -fstrict-aliasing -fforce-addr
 # stays opt-in via FFLAGS.
 WFLAGS   ?= -Wall -Wextra -Wundef -Wshadow -Wcast-align -Wcast-qual -Wstrict-prototypes -pedantic -Wno-variadic-macros
 CPPFLAGS := -I$(LZ5DIR) -DXXH_NAMESPACE=LZ5_ 
+
+# Intel's JCC erratum (Skylake to Comet Lake and Cascade Lake): keep branches
+# within 32-byte boundaries. Probed with the compiler in use, on x86 only;
+# JCC_ERRATUM=0 disables it. See the same block in ../lib/Makefile.
+JCC_ERRATUM ?= 1
+ifeq ($(JCC_ERRATUM),1)
+ifneq (,$(filter x86_64 i386 i486 i586 i686,$(shell uname -m)))
+  JCC_FLAG := $(shell $(CC) -Wa,-mbranches-within-32B-boundaries -x c -c /dev/null -o /dev/null 2>/dev/null && echo -Wa,-mbranches-within-32B-boundaries)
+  ifeq ($(JCC_FLAG),)
+    JCC_FLAG := $(shell $(CC) -mbranches-within-32B-boundaries -x c -c /dev/null -o /dev/null 2>/dev/null && echo -mbranches-within-32B-boundaries)
+  endif
+  CFLAGS += $(JCC_FLAG)
+endif
+endif
 FLAGS    := $(CFLAGS) $(CPPFLAGS) $(WFLAGS) $(LDFLAGS) $(MOREFLAGS)
 
 
