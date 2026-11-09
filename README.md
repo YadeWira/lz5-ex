@@ -70,22 +70,22 @@ fast at every level.
 |  | lz5-ex | | | compared with LZ5 1.5.0 | | |
 | :---- | ---: | ---: | ---: | ---: | ---: | ---: |
 | **Level** | **Size** | **Compression** | **Decompression** | **Size** | **Compression** | **Decompression** |
-| `-0` (default) | 41.62% | 232 MB/s | 1103 MB/s | same | 3% faster | 64% faster |
-| `-1` | 53.42% | 590 MB/s | 1866 MB/s | 0.3% smaller | 14% faster | 22% faster |
-| `-2` | 48.29% | 448 MB/s | 1567 MB/s | 1.7% smaller | 11% faster | 15% faster |
-| `-3` | 44.76% | 344 MB/s | 1518 MB/s | 0.7% smaller | 8% faster | 28% faster |
-| `-4` | 39.80% | 187 MB/s | 1245 MB/s | 2.5% smaller | 7% faster | 29% faster |
-| `-5` | 39.11% | 146 MB/s | 1174 MB/s | 1.9% smaller | 20% faster | 51% faster |
-| `-6` | 37.05% | 55 MB/s | 1296 MB/s | 2.5% smaller | 12% faster | 36% faster |
-| `-7` | 36.30% | 50 MB/s | 1261 MB/s | 2.4% smaller | 9% faster | 38% faster |
-| `-8` | 35.95% | 45 MB/s | 1240 MB/s | 2.3% smaller | 9% faster | 48% faster |
-| `-9` | 34.32% | 28 MB/s | 1238 MB/s | 2.0% smaller | 5% faster | 54% faster |
-| `-10` | 33.45% | 21 MB/s | 1280 MB/s | 1.9% smaller | 6% faster | 67% faster |
-| `-11` | 33.45% | 16 MB/s | 1190 MB/s | 0.2% smaller | 4% faster | 55% faster |
-| `-12` | 32.79% | 12 MB/s | 1203 MB/s | same | 5% faster | 57% faster |
-| `-13` | 32.12% | 6.9 MB/s | 1260 MB/s | same | 7% faster | 68% faster |
-| `-14` | 31.11% | 4.8 MB/s | 1330 MB/s | same | 6% faster | 87% faster |
-| `-15` | 30.95% | 2.2 MB/s | 1330 MB/s | same | 5% faster | 87% faster |
+| `-0` (default) | 41.62% | 235 MB/s | 1125 MB/s | same | 5% faster | 68% faster |
+| `-1` | 53.42% | 614 MB/s | 1856 MB/s | 0.3% smaller | 19% faster | 20% faster |
+| `-2` | 48.29% | 486 MB/s | 1646 MB/s | 1.7% smaller | 14% faster | 17% faster |
+| `-3` | 44.76% | 352 MB/s | 1506 MB/s | 0.7% smaller | 11% faster | 27% faster |
+| `-4` | 39.80% | 183 MB/s | 1252 MB/s | 2.5% smaller | 7% faster | 31% faster |
+| `-5` | 39.11% | 147 MB/s | 1187 MB/s | 1.9% smaller | 21% faster | 50% faster |
+| `-6` | 37.05% | 55 MB/s | 1306 MB/s | 2.5% smaller | 12% faster | 38% faster |
+| `-7` | 36.30% | 49 MB/s | 1250 MB/s | 2.4% smaller | 9% faster | 39% faster |
+| `-8` | 35.95% | 45 MB/s | 1234 MB/s | 2.3% smaller | 8% faster | 49% faster |
+| `-9` | 34.32% | 29 MB/s | 1262 MB/s | 2.0% smaller | 6% faster | 58% faster |
+| `-10` | 33.45% | 22 MB/s | 1298 MB/s | 1.9% smaller | 7% faster | 68% faster |
+| `-11` | 33.45% | 15 MB/s | 1179 MB/s | 0.2% smaller | 3% faster | 54% faster |
+| `-12` | 32.79% | 11 MB/s | 1203 MB/s | same | 4% faster | 60% faster |
+| `-13` | 32.12% | 6.9 MB/s | 1280 MB/s | same | 7% faster | 69% faster |
+| `-14` | 31.11% | 4.8 MB/s | 1320 MB/s | same | 5% faster | 86% faster |
+| `-15` | 30.95% | 2.2 MB/s | 1345 MB/s | same | 7% faster | 90% faster |
 
 How to read it:
 - **Size** is the compressed size as a percentage of the original: 41.62% means a
@@ -99,8 +99,8 @@ Measured on the [Silesia corpus](http://sun.aei.polsl.pl/~sdeor/index.php?page=s
 (211,938,580 bytes of mixed files) with [lzbench](https://github.com/inikep/lzbench)
 2.4.1, one core of an Intel Xeon E5-2697A v4 @ 2.60 GHz, GCC 14.2.0. LZ5 1.5.0 ran in
 the same harness, interleaved with lz5-ex level by level (three rounds, median speed).
-The figures are from lz5-ex 1.5.2; 1.5.3 and 1.5.4 did not change the compressor or
-the decoder loop, so they still apply.
+The figures are from lz5-ex 1.5.5, which sped up levels 0-3; levels 4-15 and the
+decoder loop are unchanged since 1.5.2.
 
 The other compressors (zstd, lz4, brotli, xz, ...), the per-level 1.5.0 figures and how
 to reproduce the runs are on the wiki's [benchmarks][wBench] page.

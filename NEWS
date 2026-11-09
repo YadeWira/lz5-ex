@@ -1,3 +1,28 @@
+lz5-ex v1.5.5
+Performance release.
+
+Library (the format and every compressed byte are unchanged):
+- levels 0-3 compress 2% to 6% faster. Without a dictionary, the match
+  candidate is now compared with the current position before its distance is
+  checked, as LZ4 1.11 does: a data mismatch is the common case, and
+  predicting that branch is cheaper than predicting the window check first.
+  The predicates are unchanged, only their order is, so the parsers keep the
+  same matches and every compressed byte is identical (ratio guard: 96/96
+  cases). Silesia, one core of a Xeon E5-2697A v4, the two builds run
+  alternately over the corpus (lzbench, best iteration per file): level 0
+  +2.1% (237.7 -> 242.7 MB/s), level 1 +5.6% (587.1 -> 620.1), level 2 +3.3%
+  (477.3 -> 493.0), level 3 +1.9% (351.2 -> 358.0).
+  Decompression is unchanged. Levels 4-15 are untouched.
+
+Build:
+- x86 builds keep branches within 32-byte boundaries, as LZ4 1.11 does by
+  default, to avoid Intel's JCC erratum on the Skylake family (Skylake to
+  Comet Lake and Cascade Lake): a branch crossing or ending on a 32-byte
+  boundary is no longer cached as decoded uops, which costs up to ~12%
+  compression and ~31% decompression there. The flag is probed with the
+  compiler in use, on x86 only; it is within noise on other cpus (measured
+  -1.4% to +1.7% on Zen 4 by the LZ4 project). `make JCC_ERRATUM=0` disables.
+
 lz5-ex v1.5.4
 Maintenance release.
 

@@ -8,7 +8,7 @@
 #   liblz5-devel  headers + pkg-config       (BSD)
 
 Name:           lz5
-Version:        1.5.4
+Version:        1.5.5
 Release:        1%{?dist}
 Summary:        Fast and efficient LZ5 compression library
 
@@ -71,6 +71,11 @@ make -C programs DESTDIR=%{buildroot} PREFIX=/usr install
 %{_includedir}/lz5*.h
 
 %changelog
+* Sun Nov 08 2026 LZ5 maintainers <lz5@example.org> - 1.5.5-1
+- Performance release: levels 0-3 compress 2% to 7% faster with byte-identical
+  output, and x86 builds keep branches within 32-byte boundaries (Intel JCC
+  erratum). See NEWS.
+
 * Fri Oct 30 2026 LZ5 maintainers <lz5@example.org> - 1.5.4-1
 - Maintenance release: LZ5F context reuse and error paths, lz5 -m/-b without
   files, skippable frames from a pipe. See NEWS.
