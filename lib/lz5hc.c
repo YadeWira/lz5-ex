@@ -1991,22 +1991,29 @@ FORCE_INLINE int LZ5HC_compress_fast_generic (
 
             if (usePlus)
                 ml = LZ5HC_FindMatchFast3 (ctx, idx, idx3, ip, matchlimit, (&ref));
-            else if (idx >= dictLimitV)
+            else if ((idx >= dictLimitV) && (idx < current))
             {
                 /* Candidate in the prefix: the same test FindMatchFastest makes -
-                 * idx < current and within the window, one unsigned compare - and
-                 * the same length (the first 4 bytes are known equal, so counting
-                 * from byte 4 gives what counting from byte 3 does), inlined.
+                 * idx < current and within the window - and the same length (the
+                 * first 4 bytes are known equal, so counting from byte 4 gives
+                 * what counting from byte 3 does), inlined.
                  * The data compare comes first, as in level 0: a mismatch is the
                  * common case and cheaper to predict. A candidate that matches
                  * but is too far is still rejected, and neither test changes
-                 * which candidates are kept, so the output is unchanged. */
+                 * which candidates are kept, so the output is unchanged.
+                 * idx < current must be explicit here: a table reused across
+                 * frames can hold an entry past the current position whose
+                 * pointer is no longer mapped (found by ASan in frametest with
+                 * a freed dictionary), and the distance check that used to
+                 * reject it came after the read. */
                 const BYTE* const m = base + idx;
                 ml = 0;
                 if (MEM_read32(m) == MEM_read32(ip) && (U32)(current - idx - 1) < maxDistM1) { ml = (int)MEM_count(ip+4, m+4, matchlimit) + 4; ref = m; }
             }
-            else
+            else if (idx < dictLimitV)
                 ml = LZ5HC_FindMatchFastest (ctx, idx, ip, matchlimit, (&ref));   /* dictionary or empty slot */
+            else
+                ml = 0;   /* stale entry: idx is not behind the current position */
             if (ml) break;
         }
 

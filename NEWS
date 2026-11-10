@@ -13,11 +13,14 @@ Library (the format and every compressed byte are unchanged):
   +2.1% (237.7 -> 242.7 MB/s), level 1 +5.6% (587.1 -> 620.1), level 2 +3.3%
   (477.3 -> 493.0), level 3 +1.9% (351.2 -> 358.0).
   Decompression is unchanged. Levels 4-15 are untouched.
-- 32-bit builds no longer crash at level 0 on inputs of 64 KB or more: the
-  new order above read the match table's empty entries, which are NULL in the
-  byPtr table that 32-bit builds use, so it now applies only to the index
-  tables, where an empty entry is source+0. 32-bit output is unchanged from
-  1.5.4 and interoperates with LZ5 1.5.0 both ways.
+- two memory-safety bugs in that new order, found by the v1.5.5 release build
+  and by ASan: 32-bit builds read the NULL empty entries of the byPtr table at
+  level 0, and the levels 1-3 parser read a table entry past the current
+  position whose buffer a previous frame had freed. The order now applies only
+  where the candidate is known to be readable (the index tables, and positions
+  behind the current one); 32-bit output is unchanged from 1.5.4, 32-bit
+  streams interoperate with LZ5 1.5.0 both ways, and the 64-bit output is
+  unchanged (ratio guard 96/96).
 
 Build:
 - x86 builds keep branches within 32-byte boundaries, as LZ4 1.11 does by
