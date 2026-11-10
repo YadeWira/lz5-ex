@@ -221,7 +221,9 @@ FORCE_INLINE int LZ5_compress_generic(
              * the common case, and predicting that one is cheaper than
              * predicting the window check first (measured +2-3% at level 0 on
              * Silesia, same output). With a dictionary the order is kept: the
-             * candidate may sit outside the current input. */
+             * candidate may sit outside the current input. byPtr is excluded
+             * too: its empty entries are NULL, not source+0 as the index
+             * tables' are, so they cannot be read before the window check. */
 #define LZ5_PROBE(missAction) {                                               \
                     match = LZ5_getPositionOnHash(h, ctx, tableType, base);   \
                     if (dict==usingExtDict) {                                 \
@@ -231,7 +233,7 @@ FORCE_INLINE int LZ5_compress_generic(
                     {   U32 const hNext = LZ5_hashPosition(forwardIp, tableType); \
                         LZ5_putPositionOnHash(ip, h, ctx, tableType, base);   \
                         h = hNext; }                                          \
-                    if (dict==noDict) {                                       \
+                    if ((dict==noDict) && (tableType!=byPtr)) {               \
                         if (likely(MEM_read32(match) != MEM_read32(ip))) missAction; \
                         if ((tableType!=byU16) && (match + MAX_DISTANCE < ip)) missAction; \
                     } else {                                                  \
@@ -403,8 +405,8 @@ _next_match:
         LZ5_putPosition(ip, ctx, tableType, base);
         /* The data compare before the window check, as in the probe above:
          * without a dictionary the candidate is inside the input, and the
-         * common case is a mismatch. */
-        if ( (dict==noDict)
+         * common case is a mismatch. byPtr is excluded there too. */
+        if ( ((dict==noDict) && (tableType!=byPtr))
              ? ((MEM_read32(match)==MEM_read32(ip)) && (match+MAX_DISTANCE>=ip))
              : ( ((dictIssue==dictSmall) ? (match>=lowRefLimit) : 1)
               && (match+MAX_DISTANCE>=ip)
